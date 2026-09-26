@@ -1,0 +1,107 @@
+[
+  {
+    "customer_id": 1,
+    "name": "สมชาย ใจดี",
+    "phone": "0812340001",
+    "latitude": 13.7665,
+    "longitude": 100.5120
+  },
+  {
+    "customer_id": 2,
+    "name": "สุดา พาณิชย์",
+    "phone": "0812340002",
+    "latitude": 13.7712,
+    "longitude": 100.4985
+  },
+  {
+    "customer_id": 3,
+    "name": "วิชัย การค้า",
+    "phone": "0812340003",
+    "latitude": 13.7482,
+    "longitude": 100.5155
+  },
+  {
+    "customer_id": 4,
+    "name": "นภา มณี",
+    "phone": "0812340004",
+    "latitude": 13.7425,
+    "longitude": 100.4930
+  },
+  {
+    "customer_id": 5,
+    "name": "ประสิทธิ์ เจริญ",
+    "phone": "0812340005",
+    "latitude": 13.7598,
+    "longitude": 100.5245
+  },
+  {
+    "customer_id": 6,
+    "name": "กมลวรรณ สุขใจ",
+    "phone": "0812340006",
+    "latitude": 13.7790,
+    "longitude": 100.5080
+  },
+  {
+    "customer_id": 7,
+    "name": "ธนา รุ่งเรือง",
+    "phone": "0812340007",
+    "latitude": 13.7355,
+    "longitude": 100.5055
+  },
+  {
+    "customer_id": 8,
+    "name": "อรทัย แก้วใส",
+    "phone": "0812340008",
+    "latitude": 13.7520,
+    "longitude": 100.4835
+  },
+  {
+    "customer_id": 9,
+    "name": "สมปอง มีสุข",
+    "phone": "0812340009",
+    "latitude": 13.7685,
+    "longitude": 100.4870
+  },
+  {
+    "customer_id": 10,
+    "name": "พิมพ์ใจ ค้าขาย",
+    "phone": "0812340010",
+    "latitude": 13.7305,
+    "longitude": 100.4865
+  },
+  {
+    "customer_id": 11,
+    "name": "อนันต์ ทองดี",
+    "phone": "0812340011",
+    "latitude": 13.7835,
+    "longitude": 100.5200
+  },
+  {
+    "customer_id": 12,
+    "name": "มานะ ตั้งใจ",
+    "phone": "0812340012",
+    "latitude": 13.7445,
+    "longitude": 100.5250
+  },
+  {
+    "customer_id": 13,
+    "name": "วรรณา รัตน์",
+    "phone": "0812340013",
+    "latitude": 13.7735,
+    "longitude": 100.4785
+  },
+  {
+    "customer_id": 14,
+    "name": "เอกชัย ขยัน",
+    "phone": "0812340014",
+    "latitude": 13.7375,
+    "longitude": 100.5205
+  },
+  {
+    "customer_id": 15,
+    "name": "ศิริพร ดีงาม",
+    "phone": "0812340015",
+    "latitude": 13.7560,
+    "longitude": 100.5320
+  }
+]

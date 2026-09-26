@@ -1,0 +1,101 @@
+<h1>Work Order Planning Demo</h1>
+
+<p>
+  Depot:
+  {{ depot.latitude }},
+  {{ depot.longitude }}
+</p>
+
+<button (click)="regenerate()">
+  Re-Generate
+</button>
+
+<hr />
+
+@if (loading) {
+  <p>กำลังสร้าง Work Orders...</p>
+}
+
+@if (errorMessage) {
+  <p>{{ errorMessage }}</p>
+}
+
+@if (!loading && !errorMessage) {
+
+  <h2>
+    จำนวน Work Orders: {{ workOrders.length }}
+  </h2>
+
+  @for (workOrder of workOrders; track workOrder.work_order_id) {
+
+    <div style="border: 1px solid #ccc; padding: 12px; margin-bottom: 12px;">
+
+      <h3>
+        {{ workOrder.work_order_id }}
+      </h3>
+
+      <p>
+        จำนวน Orders:
+        {{ workOrder.orders.length }}
+      </p>
+
+      <p>
+        Total Quantity:
+        {{ workOrder.totalQuantity }}
+      </p>
+
+      <p>
+        Estimated Distance:
+        {{ workOrder.estimatedDistance | number:'1.2-2' }} km
+      </p>
+
+      <hr />
+
+      @for (order of workOrder.orders; track order.order_id) {
+
+        <div style="margin-left: 20px;">
+
+          <p>
+            <strong>Order:</strong>
+            {{ order.order_id }}
+          </p>
+
+          <p>
+            Customer:
+            {{ order.customer_id }}
+          </p>
+
+          <p>
+            Location:
+            {{ order.latitude }},
+            {{ order.longitude }}
+          </p>
+
+          <p>
+            Quantity:
+            {{ order.quantity }}
+          </p>
+
+          <p>
+            Distance from Depot:
+            {{ order.distanceFromDepot | number:'1.2-2' }} km
+          </p>
+
+          <p>
+            Bearing:
+            {{ order.bearing | number:'1.2-2' }}°
+          </p>
+
+          <p>
+            Direction:
+            <strong>{{ order.direction }}</strong>
+          </p>
+
+        </div>
+
+        <hr />
+      }
+
+    </div>
+  }
+}
