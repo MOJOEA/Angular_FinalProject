@@ -84,7 +84,6 @@ export class WorkOrderService {
 
       workOrder = {
         ...workOrder,
-        routeCoordinates,
         routeDistance,
         routeDuration,
       };
