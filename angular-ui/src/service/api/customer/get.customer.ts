@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
-import { Customer } from '../../Model/customer';
+import { Customer } from '../../../Model/customer';
 import { GetAllCustomerService } from './get.Allcustomer';
 
 @Injectable({

@@ -1,313 +1,253 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+
 import { Order } from '../../Model/order';
 import { Customer } from '../../Model/customer';
-import { Coordinate, DistanceService } from './distance.service';
+import { Coordinate } from '../../Model/coordinate';
+import { WorkOrder, PlanningOrder } from '../../Model/work';
+
+import { DistanceService } from './distance.service';
 import { BearingService } from './bearing.service';
 
-export interface PlanningOrder extends Order {
-  latitude: number;
-  longitude: number;
-  distanceFromDepot: number;
-  bearing: number;
-  direction: string;
-}
+import { RoutesAMapService } from '../api/map/get.routesamap';
 
-export interface WorkOrder {
-  work_order_id: string;
-  orders: PlanningOrder[];
-  totalQuantity: number;
-  estimatedDistance: number;
-}
+import { convertDistance } from '../../Util/convert/convertDistance';
+import { convertDuration } from '../../Util/convert/convertDuration';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WorkOrderService {
+  private routesAMapService = inject(RoutesAMapService);
   private readonly maxOrdersPerWorkOrder = 3;
-  private readonly maxBearingDifference = 35;
 
   constructor(
     private distanceService: DistanceService,
-    private bearingService: BearingService
+    private bearingService: BearingService,
   ) {}
 
-  createWorkOrders(
-    orders: Order[],
-    customers: Customer[],
-    depot: Coordinate
-  ): WorkOrder[] {
+  // ฟังก์ชันหลักสำหรับรับออเดอร์มาจัดกลุ่มออกเป็นใบงาน
+  createWorkOrders(orders: Order[], customers: Customer[], depot: Coordinate,): Promise<WorkOrder[]> {
     const planningOrders = this.prepareOrders(orders, customers, depot);
-    return planningOrders.length
-      ? this.distributeBalanced(planningOrders)
-      : [];
+    return planningOrders.length ? this.distributeOrders(planningOrders, depot) : Promise.resolve([]);
   }
 
-  // เตรียมข้อมูล Order และเรียงจากใกล้ Depot ไปไกล
-  private prepareOrders(
-    orders: Order[],
-    customers: Customer[],
-    depot: Coordinate
-  ): PlanningOrder[] {
-    const customerMap = new Map(
-      customers.map(customer => [customer.customer_id, customer])
-    );
+  // จับคู่ข้อมูลออเดอร์กับพิกัดลูกค้า พร้อมคำนวณระยะทางและมุมองศาจากคลังสินค้า
+  private prepareOrders(orders: Order[], customers: Customer[], depot: Coordinate,): PlanningOrder[] {
+    // จุดสำคัญ: ใช้ Map เก็บข้อมูลลูกค้าเพื่อทำความเร็วในการค้นหาข้อมูล O(1)
+    const customerMap = new Map(customers.map((customer) => [customer.customer_id, customer]));
 
-    return orders
-      .reduce<PlanningOrder[]>((result, order) => {
+    return orders.map((order) => {
         const customer = customerMap.get(order.customer_id);
 
         if (!customer) {
-          console.warn(
-            `ไม่พบ Customer ${order.customer_id} สำหรับ Order ${order.order_id}`
-          );
-          return result;
+          console.warn(`ไม่พบ Customer ${order.customer_id} สำหรับ Order ${order.order_id}`);
+          return null;
         }
 
-        const coordinate: Coordinate = {
-          latitude: customer.latitude,
-          longitude: customer.longitude
-        };
-
+        const coordinate: Coordinate = { latitude: customer.latitude, longitude: customer.longitude,};
         const distance = this.distanceService.calculateDistance(depot, coordinate);
         const bearing = this.bearingService.calculateBearing(depot, coordinate);
 
-        result.push({
+        return {
           ...order,
           latitude: customer.latitude,
           longitude: customer.longitude,
           distanceFromDepot: distance,
           bearing,
-          direction: this.bearingService.getDirection(bearing)
-        });
-
-        return result;
-      }, [])
+          direction: this.bearingService.getDirection(bearing),
+        };
+      })
+      .filter((order): order is PlanningOrder => order !== null)
       .sort((a, b) => a.distanceFromDepot - b.distanceFromDepot);
   }
 
-  // แบ่ง Order เป็น Work Order
-  private distributeBalanced(orders: PlanningOrder[]): WorkOrder[] {
+  // วนลูปจัดกลุ่มออเดอร์ลงใบงาน โดยจำกัดจำนวนสูงสุดต่อหนึ่งใบงาน
+  private async distributeOrders(orders: PlanningOrder[], depot: Coordinate): Promise<WorkOrder[]> {
     const remainingOrders = [...orders];
-    const workOrderCount = Math.ceil(
-      remainingOrders.length / this.maxOrdersPerWorkOrder
-    );
     const workOrders: WorkOrder[] = [];
 
-    for (let i = 0; i < workOrderCount && remainingOrders.length; i++) {
-      const workOrdersLeft = workOrderCount - i - 1;
-      const seedIndex = this.findBestSeedIndex(remainingOrders);
-
-      if (seedIndex < 0) break;
-
-      const [seed] = remainingOrders.splice(seedIndex, 1);
-      const workOrder = this.createWorkOrder([seed]);
-
-      while (
-        workOrder.orders.length < this.maxOrdersPerWorkOrder &&
-        remainingOrders.length > workOrdersLeft
-      ) {
-        const index = this.findBestOrderIndex(workOrder, remainingOrders);
-        if (index < 0) break;
-
-        workOrder.orders.push(remainingOrders.splice(index, 1)[0]);
-        this.recalculateWorkOrder(workOrder);
-      }
-
-      workOrders.push(workOrder);
-    }
-
-    this.distributeRemainingOrders(workOrders, remainingOrders);
-
-    return workOrders.filter(workOrder => workOrder.orders.length);
-  }
-
-  // เลือก Customer ที่มี Order เหลือมากที่สุดเป็น Seed
-  private findBestSeedIndex(orders: PlanningOrder[]): number {
-    if (!orders.length) return -1;
-
-    const customerCounts = new Map<number, number>();
-
-    for (const order of orders) {
-      customerCounts.set(
-        order.customer_id,
-        (customerCounts.get(order.customer_id) ?? 0) + 1
-      );
-    }
-
-    let bestIndex = 0;
-    let bestScore = -Infinity;
-
-    for (let i = 0; i < orders.length; i++) {
-      const order = orders[i];
-      const count = customerCounts.get(order.customer_id) ?? 0;
-
-      let score = count * 100000;
-
-      if (count >= this.maxOrdersPerWorkOrder) {
-        score += 50000;
-      }
-
-      score -= order.distanceFromDepot;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestIndex = i;
-      }
-    }
-
-    return bestIndex;
-  }
-
-  // เลือก Order ที่เหมาะที่สุดสำหรับ Work Order
-  private findBestOrderIndex(
-    workOrder: WorkOrder,
-    orders: PlanningOrder[]
-  ): number {
-    if (!orders.length) return -1;
-
-    const targetBearing = this.calculateAverageBearing(workOrder.orders);
-    const targetDistance = this.getAverageDistance(workOrder.orders);
-    const referenceCustomer = workOrder.orders[0].customer_id;
-
-    let bestIndex = 0;
-    let bestScore = Infinity;
-
-    for (let i = 0; i < orders.length; i++) {
-      const order = orders[i];
-
-      const sameCustomer = workOrder.orders.some(
-        existing => existing.customer_id === order.customer_id
-      );
-
-      const sameDirection = workOrder.orders.some(
-        existing => existing.direction === order.direction
-      );
-
-      const bearingDifference = this.circularAngleDifference(
-        targetBearing,
-        order.bearing
-      );
-
-      const distanceDifference = Math.abs(
-        targetDistance - order.distanceFromDepot
-      );
-
-      let score = sameCustomer ? 0 : 1_000_000;
-      score += sameDirection ? 0 : 100_000;
-      score += bearingDifference *
-        (bearingDifference <= this.maxBearingDifference ? 100 : 200);
-      score += distanceDifference * 10;
-      score += order.quantity;
-
-      // Tie-breaker ให้ Customer เดียวกับ Order แรกมาก่อน
-      if (order.customer_id === referenceCustomer) {
-        score -= 1;
-      }
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestIndex = i;
-      }
-    }
-
-    return bestIndex;
-  }
-
-  // เติม Order ที่ยังเหลือเข้า Work Order ที่ยังไม่เต็ม
-  private distributeRemainingOrders(
-    workOrders: WorkOrder[],
-    remainingOrders: PlanningOrder[]
-  ): void {
     while (remainingOrders.length) {
-      let placed = false;
+      const seedIndex = this.findBestSeedIndex(remainingOrders);
+      const [seed] = remainingOrders.splice(seedIndex, 1);
+      let workOrder = this.createWorkOrder([seed]);
 
-      for (const workOrder of workOrders) {
-        if (workOrder.orders.length >= this.maxOrdersPerWorkOrder) continue;
-
-        const index = this.findBestOrderIndex(workOrder, remainingOrders);
-        if (index < 0) continue;
-
-        workOrder.orders.push(remainingOrders.splice(index, 1)[0]);
-        this.recalculateWorkOrder(workOrder);
-        placed = true;
-        break;
-      }
-
-      if (placed) continue;
-
-      const workOrder = this.createWorkOrder([
-        remainingOrders.shift()!
-      ]);
-
-      while (
-        workOrder.orders.length < this.maxOrdersPerWorkOrder &&
-        remainingOrders.length
-      ) {
-        const index = this.findBestOrderIndex(workOrder, remainingOrders);
-        if (index < 0) break;
-
+      while (workOrder.orders.length < this.maxOrdersPerWorkOrder && remainingOrders.length) {
+        const index = this.findBestOrderIndex(workOrder.orders, remainingOrders);
         workOrder.orders.push(remainingOrders.splice(index, 1)[0]);
       }
+
+      workOrder.orders = this.optimizeRouteSequence(workOrder.orders, depot);
+      const res = await this.createFletRoutesMap(workOrder.orders, depot);
+      const routeCoordinates = (res as any).routes[0].geometry.coordinates;
+      const routeDistance = convertDistance((res as any).routes[0].distance);
+      const routeDuration = convertDuration((res as any).routes[0].duration);
+
+      workOrder = {
+        ...workOrder,
+        routeCoordinates,
+        routeDistance,
+        routeDuration,
+      };
 
       this.recalculateWorkOrder(workOrder);
       workOrders.push(workOrder);
     }
+
+    return workOrders;
   }
 
+  private createFletRoutesMap(orders: PlanningOrder[], depot: Coordinate): Promise<any> {
+    const waypoints = orders.map((order) => ({ latitude: order.latitude, longitude: order.longitude }));
+    return this.routesAMapService.getRoute(depot, waypoints);
+  }
+
+  // ค้นหาออเดอร์ที่เหมาะสมที่สุดที่จะนำมาเป็นตัวตั้งต้นของใบงานใหม่
+  private findBestSeedIndex(orders: PlanningOrder[]): number {
+    const customerCounts = new Map<Order['customer_id'], number>();
+
+    for (const order of orders) {
+      customerCounts.set(order.customer_id, (customerCounts.get(order.customer_id) ?? 0) + 1);
+    }
+
+    let bestIndex = 0;
+
+    for (let i = 1; i < orders.length; i++) {
+      const current = orders[i];
+      const best = orders[bestIndex];
+
+      const currentCount = customerCounts.get(current.customer_id) ?? 0;
+      const bestCount = customerCounts.get(best.customer_id) ?? 0;
+
+      // จุดสำคัญ: เลือกออเดอร์ของลูกค้าที่มีรายการสั่งซื้อซ้ำเยอะที่สุดก่อน ถ้าเท่ากันจะเลือกตัวที่ใกล้คลังสินค้าที่สุด
+      if (
+        currentCount > bestCount ||
+        (currentCount === bestCount && current.distanceFromDepot < best.distanceFromDepot)
+      ) {
+        bestIndex = i;
+      }
+    }
+
+    return bestIndex;
+  }
+
+  // หาออเดอร์ถัดไปจากรายการที่เหลือ เพื่อเอาเข้ามาใส่รวมในใบงานปัจจุบันที่ยังไม่เต็ม
+  private findBestOrderIndex(
+    currentOrders: PlanningOrder[],
+    remainingOrders: PlanningOrder[],
+  ): number {
+    const customers = new Set<Order['customer_id']>(
+      currentOrders.map((order) => order.customer_id),
+    );
+    const directions = new Set<string>(currentOrders.map((order) => order.direction));
+    const averageBearing = this.bearingService.calculateAverageBearing(currentOrders);
+    const averageDistance = this.distanceService.getAverageDistance(currentOrders);
+
+    let bestIndex = 0;
+
+    for (let i = 1; i < remainingOrders.length; i++) {
+      if ( this.isBetterOrder( remainingOrders[i], remainingOrders[bestIndex], customers, directions, averageBearing, averageDistance,)
+      ) {
+        bestIndex = i;
+      }
+    }
+
+    return bestIndex;
+  }
+
+  // เปรียบเทียบออเดอร์สองตัว เพื่อตัดสินว่าตัวไหนควรถูกเลือกเข้าใบงานปัจจุบันมากกว่ากัน
+  private isBetterOrder(
+    current: PlanningOrder,
+    best: PlanningOrder,
+    customers: Set<Order['customer_id']>,
+    directions: Set<string>,
+    averageBearing: number,
+    averageDistance: number,
+  ): boolean {
+    // จุดยาก: เป็นจุดรวมเงื่อนไขตัดสินใจ เรียงตามความสำคัญ: ลูกค้าคนเดิม -> ทิศเดียวกัน -> องศาใกล้กัน -> ระยะทางใกล้กัน
+    const currentCustomer = customers.has(current.customer_id);
+    const bestCustomer = customers.has(best.customer_id);
+
+    if (currentCustomer !== bestCustomer) {
+      return currentCustomer;
+    }
+
+    const currentDirection = directions.has(current.direction);
+    const bestDirection = directions.has(best.direction);
+
+    if (currentDirection !== bestDirection) {
+      return currentDirection;
+    }
+
+    const currentBearing = this.circularAngleDifference(averageBearing, current.bearing);
+    const bestBearing = this.circularAngleDifference(averageBearing, best.bearing);
+
+    if (currentBearing !== bestBearing) {
+      return currentBearing < bestBearing;
+    }
+
+    return (
+      Math.abs(averageDistance - current.distanceFromDepot) <
+      Math.abs(averageDistance - best.distanceFromDepot)
+    );
+  }
+
+  // ค้นหาลำดับการวิ่งส่งของลูกค้าจากจุดที่ใกล้ที่สุดไปเรื่อยๆ (Nearest Neighbor)
+  private optimizeRouteSequence(orders: PlanningOrder[], depot: Coordinate): PlanningOrder[] {
+    if (orders.length <= 1) return orders;
+
+    const optimized: PlanningOrder[] = [];
+    const unvisited = [...orders];
+    let currentPosition: Coordinate = { latitude: depot.latitude, longitude: depot.longitude };
+
+    while (unvisited.length > 0) {
+      let nearestIndex = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < unvisited.length; i++) {
+        const orderCoord: Coordinate = {
+          latitude: unvisited[i].latitude,
+          longitude: unvisited[i].longitude,
+        };
+        const dist = this.distanceService.calculateDistance(currentPosition, orderCoord);
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestIndex = i;
+        }
+      }
+
+      const [nextOrder] = unvisited.splice(nearestIndex, 1);
+      optimized.push(nextOrder);
+      currentPosition = { latitude: nextOrder.latitude, longitude: nextOrder.longitude };
+    }
+
+    return optimized;
+  }
+
+  // คำนวณหาผลต่างของมุมองศาที่สั้นที่สุดระหว่างมุมสองมุม
   private circularAngleDifference(angle1: number, angle2: number): number {
+    // จุดยาก: ต้องคำนวณแบบวงกลมรอบตัว 360 องศา ผลต่างจะไม่มีทางเกิน 180 องศา
     const difference = Math.abs(angle1 - angle2);
     return Math.min(difference, 360 - difference);
   }
 
-  private calculateAverageBearing(orders: PlanningOrder[]): number {
-    if (!orders.length) return 0;
-
-    let x = 0;
-    let y = 0;
-
-    for (const order of orders) {
-      const radians = order.bearing * Math.PI / 180;
-      x += Math.cos(radians);
-      y += Math.sin(radians);
-    }
-
-    const bearing = Math.atan2(y, x) * 180 / Math.PI;
-    return bearing < 0 ? bearing + 360 : bearing;
-  }
-
-  private getAverageDistance(orders: PlanningOrder[]): number {
-    if (!orders.length) return 0;
-
-    return orders.reduce(
-      (sum, order) => sum + order.distanceFromDepot,
-      0
-    ) / orders.length;
-  }
-
+  // สร้างอ็อบเจกต์ใบงานใหม่พร้อมสุ่ม ID (UUID) และคำนวณผลรวมสะสมเริ่มต้น
   private createWorkOrder(orders: PlanningOrder[]): WorkOrder {
     return {
       work_order_id: crypto.randomUUID(),
       orders: [...orders],
-      totalQuantity: orders.reduce(
-        (sum, order) => sum + order.quantity,
-        0
-      ),
-      estimatedDistance: orders.reduce(
-        (sum, order) => sum + order.distanceFromDepot,
-        0
-      )
+      totalQuantity: orders.reduce((sum, order) => sum + order.quantity, 0),
+      estimatedDistance: orders.reduce((sum, order) => sum + order.distanceFromDepot, 0),
     };
   }
 
+  // อัปเดตผลรวมจำนวนสินค้าและระยะทางสะสมทุกครั้งที่มีการเพิ่มออเดอร์เข้ากลุ่มเดิม
   private recalculateWorkOrder(workOrder: WorkOrder): void {
     workOrder.totalQuantity = workOrder.orders.reduce(
-      (sum, order) => sum + order.quantity,
-      0
+      (sum: number, order: PlanningOrder) => sum + order.quantity, 0
     );
-
     workOrder.estimatedDistance = workOrder.orders.reduce(
-      (sum, order) => sum + order.distanceFromDepot,
-      0
+      (sum: number, order: PlanningOrder) => sum + order.distanceFromDepot, 0,
     );
   }
 }

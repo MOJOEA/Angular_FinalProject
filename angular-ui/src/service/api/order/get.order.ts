@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
-import { Order } from '../../Model/order';
+import { Order } from '../../../Model/order';
 import { GetAllOrderService } from './get.Allorder';
 
 @Injectable({

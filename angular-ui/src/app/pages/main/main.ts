@@ -1,34 +1,25 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { forkJoin } from 'rxjs';
 
-import { GetAllOrderService } from '../../../service/order/get.Allorder';
-import { GetAllCustomerService } from '../../../service/customer/get.Allcustomer';
+import { GetAllOrderService } from '../../../service/api/order/get.Allorder';
+import { GetAllCustomerService } from '../../../service/api/customer/get.Allcustomer';
+import { WorkOrderService } from '../../../service/route-planning/work-order.service';
 
-import {
-  WorkOrderService,
-  WorkOrder
-} from '../../../service/route-planning/work-order.service';
+import { WorkOrder } from '../../../Model/work';
 
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [
-    DecimalPipe
-  ],
+  imports: [DecimalPipe],
   templateUrl: './main.html',
   styleUrl: './main.css'
 })
 export class Main implements OnInit {
-
-  workOrders: WorkOrder[] = [];
-
-  depot = {
-    latitude: 13.7563,
-    longitude: 100.5018
-  };
-
-  loading = false;
-  errorMessage = '';
+  workOrders = signal<WorkOrder[]>([]);
+  depot = { latitude: 16.2443, longitude: 103.2502 };
+  loading = signal<boolean>(false);
+  errorMessage = signal<string>('');
 
   constructor(
     private orderService: GetAllOrderService,
@@ -42,82 +33,32 @@ export class Main implements OnInit {
   }
 
   generateWorkOrders(): void {
-    this.loading = true;
-    this.errorMessage = '';
+    this.loading.set(true);
+    this.errorMessage.set('');
 
-    console.log('เริ่มสร้าง Work Orders...');
-
-    this.orderService.getAll().subscribe({
-      next: orders => {
-
-        console.log('Orders:', orders.length);
-
-        this.customerService.getAll().subscribe({
-          next: customers => {
-
-            console.log('Customers:', customers.length);
-
-            this.workOrders =
-              this.workOrderService.createWorkOrders(
-                orders,
-                customers,
-                this.depot
-              );
-
-            console.log(
-              '===== WORK ORDERS ====='
-            );
-
-            console.log(
-              'จำนวน Work Orders:',
-              this.workOrders.length
-            );
-
-            console.log(
-              this.workOrders
-            );
-
-            // โหลดเสร็จแล้ว
-            this.loading = false;
-
-            console.log(
-              'loading =',
-              this.loading
-            );
-
-            // บังคับให้ UI ตรวจสอบค่าใหม่
+    // ใช้ forkJoin เพื่อยิง API ทั้งสองตัวพร้อมกัน ขจัดปัญหาสายเคเบิลซ้อน (Callback Hell)
+    forkJoin({
+      orders: this.orderService.getAll(),
+      customers: this.customerService.getAll()
+    }).subscribe({
+      next: ({ orders, customers }) => {
+        this.workOrderService.createWorkOrders(orders, customers, this.depot)
+          .then(workOrders => {
+            this.workOrders.set(workOrders);
+            this.loading.set(false);
             this.cdr.detectChanges();
-          },
-
-          error: error => {
-
-            console.error(
-              'โหลด Customers ไม่สำเร็จ:',
-              error
-            );
-
-            this.errorMessage =
-              `โหลด Customers ไม่สำเร็จ (${error.status})`;
-
-            this.loading = false;
-
+          })
+          .catch(error => {
+            console.error('เกิดข้อผิดพลาดในการสร้าง Work Orders:', error);
+            this.errorMessage.set(`สร้าง Work Orders ไม่สำเร็จ (${error?.message || 'Unknown Error'})`);
+            this.loading.set(false);
             this.cdr.detectChanges();
-          }
-        });
+          });
       },
-
       error: error => {
-
-        console.error(
-          'โหลด Orders ไม่สำเร็จ:',
-          error
-        );
-
-        this.errorMessage =
-          `โหลด Orders ไม่สำเร็จ (${error.status})`;
-
-        this.loading = false;
-
+        console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล:', error);
+        this.errorMessage.set(`โหลดข้อมูลไม่สำเร็จ (${error.status || 'Unknown Error'})`);
+        this.loading.set(false);
         this.cdr.detectChanges();
       }
     });
