@@ -1,9 +1,13 @@
-export function convertDuration(durationInSeconds: number): string {
-  const minutes = Math.floor(durationInSeconds / 60);
-  if (minutes < 60) {
-    return `${minutes} นาที`;
+export function convertDuration(distanceInMeters: number): string {
+  const distanceInKm = distanceInMeters / 1000;
+  const totalMinutes = Math.round((distanceInKm / 30) * 60);
+
+  if (totalMinutes < 60) {
+    return `${totalMinutes} นาที`;
   }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+
   return `${hours} ชั่วโมง ${remainingMinutes} นาที`;
 }

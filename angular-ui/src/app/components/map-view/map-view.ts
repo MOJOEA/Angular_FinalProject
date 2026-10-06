@@ -1,4 +1,5 @@
-import { Component, AfterViewInit, input, effect } from '@angular/core';
+// map-view.component.ts
+import { Component, AfterViewInit, input } from '@angular/core';
 import * as L from 'leaflet';
 import { getRandomColor } from '../../../Util/random/randomColor';
 import { WorkOrder } from '../../../Model/work';
@@ -19,15 +20,10 @@ const MAP_CONFIG = {
   styles: [`:host { display: block; width: 100%; height: 100%; }`]
 })
 export class MapViewComponent implements AfterViewInit {
-  workOrders = input<WorkOrder[]>([]);
   private map!: L.Map;
   private routePolylines: L.Polyline[] = [];
 
   constructor() {
-    effect(() => {
-      this.workOrders();
-      this.drawAllRoutes(this.workOrders());
-    });
   }
 
   ngAfterViewInit(): void {
@@ -51,30 +47,42 @@ export class MapViewComponent implements AfterViewInit {
 
     setTimeout(() => {
       this.map.invalidateSize();
-      this.drawAllRoutes(this.workOrders());
     }, 100);
   }
 
-  private drawAllRoutes(workOrders: WorkOrder[]): void {
+  public drawAllRoutes(workOrders: WorkOrder[]): void {
     if (!this.map) return;
-    
     this.clearRoutes();
     const routeGroup = L.featureGroup();
 
     workOrders.forEach((workOrder) => {
       const polyline = this.drawRoutes(workOrder);
-      if (polyline) { polyline.addTo(routeGroup); }
+      if (polyline) { 
+        routeGroup.addLayer(polyline); 
+      }
     });
 
     if (routeGroup.getLayers().length > 0) {
       this.map.fitBounds(routeGroup.getBounds(), {
-        padding:[30,30],
+          padding:[30,30],
       });
     }
-}
+  }
+
+  public drawSingleRoute(workOrder: WorkOrder): void {
+    this.clearRoutes(); // เคลียร์เส้นอื่นออกก่อน
+    this.drawRoutes(workOrder); // วาดและซูมทันที
+  }
 
 
-private drawRoutes(workOrder: WorkOrder): L.Polyline | null {
+  public clearRoutes(): void {
+    if (this.map) {
+      this.routePolylines.forEach((route) => this.map.removeLayer(route));
+    }
+    this.routePolylines = [];
+  }
+
+  private drawRoutes(workOrder: WorkOrder, shouldFitBounds: boolean = true): L.Polyline | null {
     if (!this.map) return null;
         
     const coords = workOrder.routeCoordinates;
@@ -89,19 +97,14 @@ private drawRoutes(workOrder: WorkOrder): L.Polyline | null {
         opacity: MAP_CONFIG.lineOpacity,
     }).addTo(this.map);
 
-    this.map.fitBounds(polyline.getBounds(), {
-        padding:[30,30],
-    });
+    this.routePolylines.push(polyline);
+
+    if (shouldFitBounds) {
+      this.map.fitBounds(polyline.getBounds(), {
+          padding:[30,30],
+      });
+    }
 
     return polyline;
-}
-
-
-
-  private clearRoutes(): void {
-    if (this.map) {
-      this.routePolylines.forEach((route) => this.map.removeLayer(route));
-    }
-    this.routePolylines = [];
   }
 }

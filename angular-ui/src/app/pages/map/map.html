@@ -1,16 +1,18 @@
 <div class="h-screen w-screen flex overflow-hidden bg-slate-100">
   <!-- ส่วนของแผนที่: เพิ่มคลาส block เพื่อให้ CSS รู้จักโครงสร้างความกว้างสูง -->
-  <app-map-view [workOrders]="workOrders()" class="block w-[40%] h-full min-h-screen"></app-map-view>
 
+  <app-map-view #mapView class="block w-[100%] h-full"></app-map-view>
   <!-- ส่วนของแสดงข้อมูลจัดการ -->
   <app-map-management 
-    [orders]="orders()" 
-    [customers]="customers()" 
-    [workOrders]="workOrders()" 
+    [orders]="orders()"
+    [customers]="customers()"
+    [workOrders]="workOrders()"
     [loading]="loading()"
     (generateWork)="generateWorkOrders()"
     (clearWork)="clearWorkOrders()"
     (saveWork)="saveWorkOrders()"
-    class="w-[35%] h-full bg-white border-l border-slate-200 flex flex-col shadow-lg">
+    (selectOrder)="selectOrderOnMap($event)"
+    (showAll)="showAllOrdersOnMap()"
+    class="w-[40%] h-full flex flex-col border-r border-slate-200">
   </app-map-management>
 </div>
