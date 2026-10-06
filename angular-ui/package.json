@@ -19,6 +19,7 @@
     "@angular/router": "^21.2.0",
     "daisyui": "^5.7.42",
     "leaflet": "^1.9.4",
+    "randomcolor": "^0.6.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -28,6 +29,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/leaflet": "^1.9.22",
+    "@types/randomcolor": "^0.5.9",
     "jsdom": "^28.0.0",
     "postcss": "^8.5.28",
     "prettier": "^3.8.1",

@@ -1,5 +1,5 @@
 // map-view.component.ts
-import { Component, AfterViewInit, input } from '@angular/core';
+import { Component, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
 import { getRandomColor } from '../../../Util/random/randomColor';
 import { WorkOrder } from '../../../Model/work';
@@ -53,33 +53,23 @@ export class MapViewComponent implements AfterViewInit {
   public drawAllRoutes(workOrders: WorkOrder[]): void {
     if (!this.map) return;
     this.clearRoutes();
-    const routeGroup = L.featureGroup();
+      const routeGroup = L.featureGroup();
 
     workOrders.forEach((workOrder) => {
       const polyline = this.drawRoutes(workOrder);
-      if (polyline) { 
-        routeGroup.addLayer(polyline); 
-      }
+      if (polyline) { routeGroup.addLayer(polyline); }
     });
 
-    if (routeGroup.getLayers().length > 0) {
-      this.map.fitBounds(routeGroup.getBounds(), {
-          padding:[30,30],
-      });
-    }
+    this.ZoomToFitRoutes(routeGroup);
   }
 
   public drawSingleRoute(workOrder: WorkOrder): void {
     this.clearRoutes(); // เคลียร์เส้นอื่นออกก่อน
-    this.drawRoutes(workOrder); // วาดและซูมทันที
-  }
+    const polyline = this.drawRoutes(workOrder);
+    const routeGroup = L.featureGroup();
 
-
-  public clearRoutes(): void {
-    if (this.map) {
-      this.routePolylines.forEach((route) => this.map.removeLayer(route));
-    }
-    this.routePolylines = [];
+    if (polyline) { routeGroup.addLayer(polyline);}
+    this.ZoomToFitRoutes(routeGroup);
   }
 
   private drawRoutes(workOrder: WorkOrder, shouldFitBounds: boolean = true): L.Polyline | null {
@@ -98,13 +88,22 @@ export class MapViewComponent implements AfterViewInit {
     }).addTo(this.map);
 
     this.routePolylines.push(polyline);
+    return polyline;
+  }
 
-    if (shouldFitBounds) {
-      this.map.fitBounds(polyline.getBounds(), {
+  public clearRoutes(): void {
+    if (this.map) {
+      this.routePolylines.forEach((route) => this.map.removeLayer(route));
+    }
+    this.routePolylines = [];
+  }
+
+  private ZoomToFitRoutes(routeGroup: L.FeatureGroup): void {
+    if (!this.map) return;
+    if (routeGroup.getLayers().length > 0) {
+      this.map.fitBounds(routeGroup.getBounds(), {
           padding:[30,30],
       });
     }
-
-    return polyline;
   }
 }
