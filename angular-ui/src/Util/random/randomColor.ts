@@ -1,6 +1,7 @@
+import randomColor from 'randomcolor';
 const usedHues = new Set<number>();
 
-export function getRandomColor(): string {
+export function getRandomColorVerMe(): string {
   let hue: number;
   let attempts = 0;
 
@@ -20,4 +21,8 @@ export function getRandomColor(): string {
     return Math.round(255 * color).toString(16).padStart(2, '0');
   };
   return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+export function getRandomColor(): string {
+  return randomColor({ hue: 'random', luminosity: 'bright' })
 }

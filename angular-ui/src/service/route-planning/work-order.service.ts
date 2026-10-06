@@ -84,12 +84,10 @@ export class WorkOrderService {
 
       workOrder = {
         ...workOrder,
-        routeCoordinates, // เพิ่มข้อมูลเส้นทางที่ได้จาก API ของ Flet RoutesAMap
+        routeCoordinates,
         routeDistance,
         routeDuration,
       };
-
-      this.recalculateWorkOrder(workOrder);
       workOrders.push(workOrder);
     }
 
@@ -131,28 +129,24 @@ export class WorkOrderService {
   }
 
   // หาออเดอร์ถัดไปจากรายการที่เหลือ เพื่อเอาเข้ามาใส่รวมในใบงานปัจจุบันที่ยังไม่เต็ม
-  private findBestOrderIndex(
-    currentOrders: PlanningOrder[],
-    remainingOrders: PlanningOrder[],
-  ): number {
-    const customers = new Set<Order['customer_id']>(
-      currentOrders.map((order) => order.customer_id),
-    );
-    const directions = new Set<string>(currentOrders.map((order) => order.direction));
-    const averageBearing = this.bearingService.calculateAverageBearing(currentOrders);
-    const averageDistance = this.distanceService.getAverageDistance(currentOrders);
+  private findBestOrderIndex(currentOrders: PlanningOrder[], remainingOrders: PlanningOrder[]): number {
+    if (remainingOrders.length === 0) return -1;
+
+    const customers = new Set(currentOrders.map(o => o.customer_id));
+    const directions = new Set(currentOrders.map(o => o.direction));
+    const avgBearing = this.bearingService.calculateAverageBearing(currentOrders);
+    const avgDistance = this.distanceService.getAverageDistance(currentOrders);
 
     let bestIndex = 0;
-
     for (let i = 1; i < remainingOrders.length; i++) {
-      if ( this.isBetterOrder( remainingOrders[i], remainingOrders[bestIndex], customers, directions, averageBearing, averageDistance,)
-      ) {
+      if (this.isBetterOrder(remainingOrders[i], remainingOrders[bestIndex], customers, directions, avgBearing, avgDistance)) {
         bestIndex = i;
       }
     }
-
     return bestIndex;
   }
+
+
 
   // เปรียบเทียบออเดอร์สองตัว เพื่อตัดสินว่าตัวไหนควรถูกเลือกเข้าใบงานปัจจุบันมากกว่ากัน
   private isBetterOrder(
@@ -166,63 +160,41 @@ export class WorkOrderService {
     // จุดยาก: เป็นจุดรวมเงื่อนไขตัดสินใจ เรียงตามความสำคัญ: ลูกค้าคนเดิม -> ทิศเดียวกัน -> องศาใกล้กัน -> ระยะทางใกล้กัน
     const currentCustomer = customers.has(current.customer_id);
     const bestCustomer = customers.has(best.customer_id);
-
-    if (currentCustomer !== bestCustomer) {
-      return currentCustomer;
-    }
+    if (currentCustomer !== bestCustomer) { return currentCustomer; }
 
     const currentDirection = directions.has(current.direction);
     const bestDirection = directions.has(best.direction);
-
-    if (currentDirection !== bestDirection) {
-      return currentDirection;
-    }
+    if (currentDirection !== bestDirection) {return currentDirection;}
 
     const currentBearing = this.circularAngleDifference(averageBearing, current.bearing);
     const bestBearing = this.circularAngleDifference(averageBearing, best.bearing);
+    if (currentBearing !== bestBearing) { return currentBearing < bestBearing;}
 
-    if (currentBearing !== bestBearing) {
-      return currentBearing < bestBearing;
-    }
-
-    return (
-      Math.abs(averageDistance - current.distanceFromDepot) <
-      Math.abs(averageDistance - best.distanceFromDepot)
-    );
+    return (Math.abs(averageDistance - current.distanceFromDepot) < Math.abs(averageDistance - best.distanceFromDepot));
   }
 
   // ค้นหาลำดับการวิ่งส่งของลูกค้าจากจุดที่ใกล้ที่สุดไปเรื่อยๆ (Nearest Neighbor)
   private optimizeRouteSequence(orders: PlanningOrder[], depot: Coordinate): PlanningOrder[] {
-    if (orders.length <= 1) return orders;
+  if (orders.length <= 1) return orders;
 
-    const optimized: PlanningOrder[] = [];
-    const unvisited = [...orders];
-    let currentPosition: Coordinate = { latitude: depot.latitude, longitude: depot.longitude };
+  const optimized: PlanningOrder[] = [];
+  const unvisited = [...orders];
+  let currentPos = depot;
 
-    while (unvisited.length > 0) {
-      let nearestIndex = 0;
-      let minDistance = Infinity;
+  while (unvisited.length > 0) {
+    const nearestIdx = unvisited.reduce((bestIdx, order, idx) => {
+      const bestDist = this.distanceService.calculateDistance(currentPos, unvisited[bestIdx]);
+      const curDist = this.distanceService.calculateDistance(currentPos, order);
+      return curDist < bestDist ? idx : bestIdx;
+    }, 0);
 
-      for (let i = 0; i < unvisited.length; i++) {
-        const orderCoord: Coordinate = {
-          latitude: unvisited[i].latitude,
-          longitude: unvisited[i].longitude,
-        };
-        const dist = this.distanceService.calculateDistance(currentPosition, orderCoord);
-
-        if (dist < minDistance) {
-          minDistance = dist;
-          nearestIndex = i;
-        }
-      }
-
-      const [nextOrder] = unvisited.splice(nearestIndex, 1);
-      optimized.push(nextOrder);
-      currentPosition = { latitude: nextOrder.latitude, longitude: nextOrder.longitude };
-    }
-
-    return optimized;
+    const [nextOrder] = unvisited.splice(nearestIdx, 1);
+    optimized.push(nextOrder);
+    currentPos = nextOrder; // บันทึกตำแหน่งล่าสุดเพื่อใช้ในรอบถัดไป
   }
+  return optimized;
+}
+
 
   // คำนวณหาผลต่างของมุมองศาที่สั้นที่สุดระหว่างมุมสองมุม
   private circularAngleDifference(angle1: number, angle2: number): number {
@@ -236,18 +208,6 @@ export class WorkOrderService {
     return {
       work_order_id: crypto.randomUUID(),
       orders: [...orders],
-      totalQuantity: orders.reduce((sum, order) => sum + order.quantity, 0),
-      estimatedDistance: orders.reduce((sum, order) => sum + order.distanceFromDepot, 0),
     };
-  }
-
-  // อัปเดตผลรวมจำนวนสินค้าและระยะทางสะสมทุกครั้งที่มีการเพิ่มออเดอร์เข้ากลุ่มเดิม
-  private recalculateWorkOrder(workOrder: WorkOrder): void {
-    workOrder.totalQuantity = workOrder.orders.reduce(
-      (sum: number, order: PlanningOrder) => sum + order.quantity, 0
-    );
-    workOrder.estimatedDistance = workOrder.orders.reduce(
-      (sum: number, order: PlanningOrder) => sum + order.distanceFromDepot, 0,
-    );
   }
 }

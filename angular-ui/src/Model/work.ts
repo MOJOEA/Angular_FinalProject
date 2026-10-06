@@ -11,8 +11,6 @@ export interface PlanningOrder extends Order {
 export interface WorkOrder {
   work_order_id: string;
   orders: PlanningOrder[];
-  totalQuantity: number;
-  estimatedDistance: number;
   routeCoordinates?: any[];
   routeDistance?: String;
   routeDuration?: String;
