@@ -2,7 +2,9 @@
   <h2 class="text-xl font-bold text-slate-800">Work Deliverables</h2>
   <p class="text-xs text-slate-400 mt-1">เริ่มออกส่ง 11.30 น. ต้องถึงไม่เกิน 12:30 น.</p>
 </div>
+
 <div class="px-6 py-4 flex-1 overflow-auto">
+  <!-- ส่วนบน: สรุปยอดข้อมูลหลัก -->
   <div class="mb-6">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold text-slate-700">ข้อมูลการจัดส่ง</h3>
@@ -27,14 +29,25 @@
       </div>
     </div>
   </div>
+
+  <!-- ส่วนกลาง: รายการใบงาน -->
   <div>
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold text-slate-700">รายการใบงาน</h3>
-      <span class="text-xs font-medium text-slate-400">{{ workOrders().length }} รายการ</span>
+      <div class="flex gap-2 items-center">
+        @if (workOrders().length > 0) {
+          <button (click)="showAll.emit()" class="text-xs font-semibold text-blue-600 hover:underline">
+            แสดงทุกเส้นทาง
+          </button>
+        }
+        <span class="text-xs font-medium text-slate-400">{{ workOrders().length }} รายการ</span>
+      </div>
     </div>
+
     <div class="flex flex-col gap-3">
       @for (workOrder of workOrders(); track workOrder.work_order_id) {
-        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-sm transition">
+        <div (click)="selectOrder.emit(workOrder.work_order_id)" 
+             class="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-sm transition cursor-pointer">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-bold text-slate-800">Work Order #{{ workOrder.work_order_id }}</h3>
             <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-semibold">
@@ -48,7 +61,7 @@
                 @for (order of workOrder.orders; track order.order_id) {
                   <span class="inline-block mr-2">
                     {{ order.order_id }}
-                    <span class="text-xs text-slate-400">({{ order.customer_id }})</span>
+                    <span class="text-xs text-slate-400">({{ searchCustomerName(order.customer_id) }})</span>
                     @if (!$last) {,}
                   </span>
                 }
@@ -78,6 +91,8 @@
     </div>
   </div>
 </div>
+
+<!-- ส่วนล่าง: กลุ่มปุ่มสั่งการทำงานแอ็กชัน -->
 <div class="p-5 border-t border-slate-200 bg-slate-50">
   <div class="flex flex-col gap-2.5">
     <button (click)="generateWork.emit()" [disabled]="loading()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition shadow-sm">

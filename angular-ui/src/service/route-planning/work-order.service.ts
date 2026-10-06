@@ -80,7 +80,7 @@ export class WorkOrderService {
       const res = await this.createFletRoutesMap(workOrder.orders, depot);
       const routeCoordinates = (res as any).routes[0].geometry.coordinates;
       const routeDistance = convertDistance((res as any).routes[0].distance);
-      const routeDuration = convertDuration((res as any).routes[0].duration);
+      const routeDuration = convertDuration((res as any).routes[0].distance);
 
       workOrder = {
         ...workOrder,
