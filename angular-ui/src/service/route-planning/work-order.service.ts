@@ -84,6 +84,7 @@ export class WorkOrderService {
 
       workOrder = {
         ...workOrder,
+        routeCoordinates, // เพิ่มข้อมูลเส้นทางที่ได้จาก API ของ Flet RoutesAMap
         routeDistance,
         routeDuration,
       };
