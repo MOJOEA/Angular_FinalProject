@@ -32,7 +32,7 @@
     "name": "ประสิทธิ์ เจริญ",
     "phone": "0812340005",
     "latitude": 16.2634,
-    "longitude": 103.2700
+    "longitude": 103.27
   },
   {
     "customer_id": 6,
@@ -46,7 +46,7 @@
     "name": "ธนา รุ่งเรือง",
     "phone": "0812340007",
     "latitude": 16.2252,
-    "longitude": 103.2700
+    "longitude": 103.27
   },
   {
     "customer_id": 8,
@@ -95,13 +95,118 @@
     "name": "เอกชัย ขยัน",
     "phone": "0812340014",
     "latitude": 16.2526,
-    "longitude": 103.2240
+    "longitude": 103.224
   },
   {
     "customer_id": 15,
     "name": "ศิริพร ดีงาม",
     "phone": "0812340015",
-    "latitude": 16.2360,
+    "latitude": 16.236,
     "longitude": 103.2764
+  },
+  {
+    "customer_id": 16,
+    "name": "กิตติพงษ์ ศรีสุข",
+    "phone": "0812340016",
+    "latitude": 16.2471,
+    "longitude": 103.2683
+  },
+  {
+    "customer_id": 17,
+    "name": "จิราพร บุญมี",
+    "phone": "0812340017",
+    "latitude": 16.2523,
+    "longitude": 103.2516
+  },
+  {
+    "customer_id": 18,
+    "name": "ชลทิตย์ นามดี",
+    "phone": "0812340018",
+    "latitude": 16.2263,
+    "longitude": 103.2409
+  },
+  {
+    "customer_id": 19,
+    "name": "ณัฐวุฒิ รักไทย",
+    "phone": "0812340019",
+    "latitude": 16.2569,
+    "longitude": 103.2717
+  },
+  {
+    "customer_id": 20,
+    "name": "ทวีศักดิ์ มั่นคง",
+    "phone": "0812340020",
+    "latitude": 16.2465,
+    "longitude": 103.2624
+  },
+  {
+    "customer_id": 21,
+    "name": "ธนพล แซ่ตั้ง",
+    "phone": "0812340021",
+    "latitude": 16.2441,
+    "longitude": 103.2433
+  },
+  {
+    "customer_id": 22,
+    "name": "นพดล เจริญสุข",
+    "phone": "0812340022",
+    "latitude": 16.2458,
+    "longitude": 103.2507
+  },
+  {
+    "customer_id": 23,
+    "name": "ปิยะพงษ์ พันธุ์ดี",
+    "phone": "0812340023",
+    "latitude": 16.2393,
+    "longitude": 103.2323
+  },
+  {
+    "customer_id": 24,
+    "name": "พรทิพย์ สวยงาม",
+    "phone": "0812340024",
+    "latitude": 16.2408,
+    "longitude": 103.2443
+  },
+  {
+    "customer_id": 25,
+    "name": "พีรพล ทรงพลัง",
+    "phone": "0812340025",
+    "latitude": 16.2452,
+    "longitude": 103.2731
+  },
+  {
+    "customer_id": 26,
+    "name": "ยุทธนา กล้าหาญ",
+    "phone": "0812340026",
+    "latitude": 16.2235,
+    "longitude": 103.2429
+  },
+  {
+    "customer_id": 27,
+    "name": "รัตนาภรณ์ แก้วดี",
+    "phone": "0812340027",
+    "latitude": 16.2524,
+    "longitude": 103.2559
+  },
+  {
+    "customer_id": 28,
+    "name": "วรวุฒิ ยิ้มแย้ม",
+    "phone": "0812340028",
+    "latitude": 16.2665,
+    "longitude": 103.2362
+  },
+  {
+    "customer_id": 29,
+    "name": "ศิริวัฒน์ วงศ์ษา",
+    "phone": "0812340029",
+    "latitude": 16.2462,
+    "longitude": 103.253
+  },
+  {
+    "customer_id": 30,
+    "name": "สุภัทรา ชัยชนะ",
+    "phone": "0812340030",
+    "latitude": 16.2303,
+    "longitude": 103.2311
   }
 ]
