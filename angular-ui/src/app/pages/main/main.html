@@ -14,8 +14,6 @@
     <div style="border: 1px solid #ccc; padding: 12px; margin-bottom: 12px;">
       <h3>{{ workOrder.work_order_id }}</h3>
       <p>จำนวน Orders: {{ workOrder.orders.length }}</p>
-      <p>Total Quantity: {{ workOrder.totalQuantity }}</p>
-      <p>Estimated Distance: {{ workOrder.estimatedDistance | number:'1.2-2' }} km</p>
       <hr />
 
       @for (order of workOrder.orders; track order.order_id) {
