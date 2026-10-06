@@ -1,11 +1,14 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+
 import { GetAllOrderService } from '../../../service/api/order/get.Allorder';
 import { GetAllCustomerService } from '../../../service/api/customer/get.Allcustomer';
 import { WorkOrderService } from '../../../service/route-planning/work-order.service';
+
 import { Customer } from '../../../Model/customer';
 import { Order } from '../../../Model/order';
 import { WorkOrder } from '../../../Model/work';
+
 import { MapManagementComponent } from '../../components/map-management/map-management';
 import { MapViewComponent } from '../../components/map-view/map-view';
 @Component({
@@ -45,9 +48,6 @@ export class Map implements OnInit {
     this.loading.set(true);
     this.errorMessage.set('');
     try {
-      if (this.orders().length === 0 || this.customers().length === 0) {
-        await Promise.all([this.fetchOrders(), this.fetchCustomers()]);
-      }
       const result = await this.workOrderService.createWorkOrders(this.orders(), this.customers(), this.depot);
       this.workOrders.set(result);
     } catch (error) {
