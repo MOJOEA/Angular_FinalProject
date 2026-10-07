@@ -71,7 +71,9 @@ export class WorkOrderService {
       const [seed] = remainingOrders.splice(seedIndex, 1);
       let workOrder = this.createWorkOrder([seed]);
 
-      while (workOrder.orders.length < this.maxOrdersPerWorkOrder && remainingOrders.length) {
+      let max = (Math.floor(Math.random() * 2) + 2);
+
+      while (workOrder.orders.length < max && remainingOrders.length) {
         const index = this.findBestOrderIndex(workOrder.orders, remainingOrders);
         workOrder.orders.push(remainingOrders.splice(index, 1)[0]);
       }
