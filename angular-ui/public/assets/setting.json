@@ -1,0 +1,17 @@
+{
+  "id": 1,
+  "shop_name": "ร้านอาหารกล่องขามเรียงเดลิเวอรี่",
+  "shop_address": "ต.ขามเรียง อ.กันทรวิชัย จ.มหาสารคาม 44150",
+  "shop_latitude": 16.245842,
+  "shop_longitude": 103.251458,
+  "box_price": 120.00,
+  "box_cost": 50.00,
+  "rider_base_fee": 40.00,
+  "rider_fee_per_km_per_box": 2.50,
+  "rider_speed_kmh": 45.0,
+  "max_orders_per_rider": 3,
+  "max_boxes_per_order": 3,
+  "departure_time": "10:30:00",
+  "delivery_window_minutes": 120,
+  "service_radius_km": 15.0
+}
