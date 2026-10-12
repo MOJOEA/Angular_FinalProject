@@ -1,93 +1,86 @@
-import { Component, OnInit, signal, viewChild } from '@angular/core'; // 🌟 ดึง viewChild เข้ามา
+import { Component, OnInit, signal, viewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { GetAllOrderService } from '../../../service/api/order/get.Allorder';
-import { GetAllCustomerService } from '../../../service/api/customer/get.Allcustomer';
-import { WorkOrderService } from '../../../service/route-planning/work-order.service';
+import { WorkService } from '../../../service/api/work'; 
+import { RoutesAMapService } from '../../../service/api/routesamap'; 
+import { WorkJob } from '../../../Model/work';
 
-import { Customer } from '../../../Model/customer';
-import { Order } from '../../../Model/order';
-import { WorkOrder } from '../../../Model/work';
-
-import { MapManagementComponent } from '../../components/map-management/map-management';
 import { MapViewComponent } from '../../components/map-view/map-view';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [MapManagementComponent, MapViewComponent],
+  imports: [MapViewComponent],
   templateUrl: './map.html',
   styleUrl: './map.css',
 })
 export class Map implements OnInit {
   readonly mapView = viewChild<MapViewComponent>('mapView');
 
-  depot = { latitude: 16.2443, longitude: 103.2502 };
   loading = signal<boolean>(false);
   errorMessage = signal<string>('');
-  orders = signal<Order[]>([]);
-  customers = signal<Customer[]>([]);
-  workOrders = signal<WorkOrder[]>([]);
+  
+  workOrders = signal<WorkJob[]>([]);
   
   constructor(
-    private orderService: GetAllOrderService,
-    private customerService: GetAllCustomerService,
-    private workOrderService: WorkOrderService,
+    private workService: WorkService, 
+    private routesAMapService: RoutesAMapService 
   ) {}
 
+  // โหลดข้อมูลและแสดงเส้นทางบนแผนที่ทันทีเมื่อเปิดหน้าจอ
   async ngOnInit(): Promise<void> {
-    this.fetchOrders();
-    this.fetchCustomers();
   }
 
-  async fetchOrders(): Promise<void> {
-    const res = await firstValueFrom(this.orderService.getAll());
-    this.orders.set(res);
-  }
-
-  async fetchCustomers(): Promise<void> {
-    const res = await firstValueFrom(this.customerService.getAll());
-    this.customers.set(res);
-  }
-
+  // ดึงข้อมูลใบงาน พ่วงพิกัดเส้นทางจาก API และส่งไปวาดบนแผนที่ทั้งหมด
   async generateWorkOrders(): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
     this.errorMessage.set('');
+    
     try {
-      this.fetchCustomers();
-      this.fetchOrders();
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      const result = await this.workOrderService.createWorkOrders(this.orders(), this.customers(), this.depot);
-      this.workOrders.set(result);
-      this.mapView()?.drawAllRoutes(result);
+      const res = await firstValueFrom(this.workService.getAll());
+      const mockWorks: WorkJob[] = res?.data || [];
+
+      if (mockWorks.length === 0) {
+        this.errorMessage.set('ไม่พบข้อมูลใบงานจำลองในระบบ');
+        return;
+      }
+
+      const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
+      
+      this.workOrders.set(worksWithRoutes);
+      this.mapView()?.drawAllRoutes(worksWithRoutes);
 
     } catch (error) {
-      this.errorMessage.set('เกิดข้อผิดพลาดในการสร้างใบงาน');
+      this.errorMessage.set('เกิดข้อผิดพลาดในการดึงและสร้างเส้นทางใบงาน');
       console.error(error);
     } finally {
       this.loading.set(false);
     }
   }
 
-  selectOrderOnMap(work_order_id: string): void {
-    const workOrder = this.workOrders().find((wo) => wo.work_order_id === work_order_id);
-    if (workOrder) { this.mapView()?.drawSingleRoute(workOrder);}
+  // ค้นหาและแสดงเส้นทางบนแผนที่เฉพาะใบงานเดี่ยวที่เลือก
+  selectOrderOnMap(job_code: string): void {
+    const workOrder = this.workOrders().find((wo) => wo.job_code === job_code);
+    if (workOrder) { 
+      this.mapView()?.drawSingleRoute(workOrder);
+    }
   }
 
+  // สั่งให้แผนที่แสดงเส้นทางของทุกใบงานพร้อมกันทั้งหมดอีกครั้ง
   showAllOrdersOnMap(): void {
     this.mapView()?.drawAllRoutes(this.workOrders());
   }
 
+  // ล้างค่าข้อมูลใบงานและลบเส้นทางทั้งหมดออกจากแผนที่
   clearWorkOrders(): void {
     this.workOrders.set([]);
-    this.orders.set([]);
-    this.customers.set([]);
     this.mapView()?.clearRoutes();
   }
 
+  // บันทึกรายการแผนงานและข้อมูลเส้นทางปัจจุบันลงคอนโซล
   saveWorkOrders(): void {
     if (this.workOrders().length === 0) return;
-    console.log('บันทึกข้อมูล Work Orders:', this.workOrders());
+    console.log('บันทึกข้อมูล Work Orders ปัจจุบัน:', this.workOrders());
   }
 }

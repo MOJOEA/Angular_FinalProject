@@ -1,17 +1,17 @@
 // map-view.component.ts
 import { Component, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
-import { getRandomColor } from '../../../Util/random/randomColor';
-import { WorkOrder } from '../../../Model/work';
+import { WorkJob } from '../../../Model/work'; // 🌟 เปลี่ยนมาอิมพอร์ต Model โครงสร้างจริงปัจจุบันของคุณ
 
 const MAP_CONFIG = {
-  initCenter: [16.2443, 103.2502] as L.LatLngExpression,
-  initZoom: 15,
-  tileLayerUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  maxZoom: 19,
-  lineWidth: 6,
-  lineOpacity: 0.85,
+  initCenter: [16.2443, 103.2502] as L.LatLngExpression, // พิกัดจุดศูนย์กลางเริ่มต้นของแผนที่
+  initZoom: 15, // ระดับการซูมเริ่มต้นตอนเปิดแผนที่
+  tileLayerUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', // ลิงก์ที่มาของภาพพื้นหลังแผนที่
+  maxZoom: 19, // ระดับที่ซูมเข้าได้ลึกที่สุด
+  lineWidth: 6, // ความหนาของเส้นบนแผนที่
+  lineOpacity: 0.85, // ความโปร่งแสงของเส้นบนแผนที่
 };
+
 
 @Component({
   selector: 'app-map-view',
@@ -23,8 +23,7 @@ export class MapViewComponent implements AfterViewInit {
   private map!: L.Map;
   private routePolylines: L.Polyline[] = [];
 
-  constructor() {
-  }
+  constructor() {}
 
   ngAfterViewInit(): void {
     setTimeout(() => {
@@ -32,6 +31,7 @@ export class MapViewComponent implements AfterViewInit {
     }, 300);
   }
 
+    // สร้างแผนที่ใหม่และล้างอินสแตนซ์เดิมถ้ามีอยู่
   private buildNewMap(center: L.LatLngExpression, zoom: number): void {
     if (this.map) {
       this.map.off();
@@ -50,37 +50,44 @@ export class MapViewComponent implements AfterViewInit {
     }, 100);
   }
 
-  public drawAllRoutes(workOrders: WorkOrder[]): void {
+  // วาดเส้นทางทั้งหมดของทุกใบงานลงบนแผนที่
+  public drawAllRoutes(workOrders: WorkJob[]): void {
     if (!this.map) return;
     this.clearRoutes();
-      const routeGroup = L.featureGroup();
+    const routeGroup = L.featureGroup();
 
     workOrders.forEach((workOrder) => {
       const polyline = this.drawRoutes(workOrder);
-      if (polyline) { routeGroup.addLayer(polyline); }
+      if (polyline) { 
+        routeGroup.addLayer(polyline); 
+      }
     });
 
     this.ZoomToFitRoutes(routeGroup);
   }
 
-  public drawSingleRoute(workOrder: WorkOrder): void {
+  // วาดเส้นทางของใบงานใบเดียวที่ระบุ
+  public drawSingleRoute(workOrder: WorkJob): void {
     this.clearRoutes(); // เคลียร์เส้นอื่นออกก่อน
     const polyline = this.drawRoutes(workOrder);
     const routeGroup = L.featureGroup();
 
-    if (polyline) { routeGroup.addLayer(polyline);}
+    if (polyline) { 
+      routeGroup.addLayer(polyline);
+    }
     this.ZoomToFitRoutes(routeGroup);
   }
 
-  private drawRoutes(workOrder: WorkOrder, shouldFitBounds: boolean = true): L.Polyline | null {
+  // ประมวลผลพิกัดและวาดเส้นทางเดี่ยวลงแผนที่
+  private drawRoutes(workOrder: WorkJob): L.Polyline | null {
     if (!this.map) return null;
         
-    const coords = workOrder.routeCoordinates;
-    if (!coords || coords.length === 0) return null;
+    const coordinates = workOrder.geometry?.coordinates;
+    if (!coordinates || coordinates.length === 0) return null;
+    const correctedCoords = coordinates.map((coord: [number, number]) => [coord[1], coord[0]] as L.LatLngExpression);
 
-    const correctedCoords = coords.map((coord: [number, number]) => [coord[1], coord[0]] as L.LatLngExpression);
-    const lineColor = getRandomColor();
-
+    
+    const lineColor = workOrder.color || '#3388ff';
     const polyline = L.polyline(correctedCoords, {
         color: lineColor,
         weight: MAP_CONFIG.lineWidth,
@@ -91,6 +98,7 @@ export class MapViewComponent implements AfterViewInit {
     return polyline;
   }
 
+  // ลบเส้นทางทั้งหมดออกจากแผนที่และล้างค่าตัวแปรเก็บเส้นทาง
   public clearRoutes(): void {
     if (this.map) {
       this.routePolylines.forEach((route) => this.map.removeLayer(route));
@@ -98,6 +106,7 @@ export class MapViewComponent implements AfterViewInit {
     this.routePolylines = [];
   }
 
+  // ปรับขนาดและมุมมองแผนที่ให้พอดีกับกลุ่มเส้นทางที่วาด
   private ZoomToFitRoutes(routeGroup: L.FeatureGroup): void {
     if (!this.map) return;
     if (routeGroup.getLayers().length > 0) {

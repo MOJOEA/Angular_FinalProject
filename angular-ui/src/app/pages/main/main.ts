@@ -2,8 +2,8 @@ import { Component, OnInit, ChangeDetectorRef, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
-import { GetAllOrderService } from '../../../service/api/order/get.Allorder';
-import { GetAllCustomerService } from '../../../service/api/customer/get.Allcustomer';
+import { OrderService } from '../../../service/api/order';
+import { CustomerService } from '../../../service/api/customer';
 import { WorkOrderService } from '../../../service/route-planning/work-order.service';
 
 import { WorkOrder } from '../../../Model/work';
@@ -22,21 +22,22 @@ export class Main implements OnInit {
   errorMessage = signal<string>('');
 
   constructor(
-    private orderService: GetAllOrderService,
-    private customerService: GetAllCustomerService,
+    private orderService: OrderService,
+    private customerService: CustomerService,
     private workOrderService: WorkOrderService,
     private cdr: ChangeDetectorRef
   ) {}
 
+  // เรียกใช้ฟังก์ชันสร้างใบงานทันทีเมื่อเริ่มต้นโหลดคอมโพเนนต์
   ngOnInit(): void {
     this.generateWorkOrders();
   }
 
+  // ดึงข้อมูลออเดอร์กับลูกค้าพร้อมกันเพื่อนำมาประมวลผลสร้างใบงานจัดส่ง
   generateWorkOrders(): void {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    // ใช้ forkJoin เพื่อยิง API ทั้งสองตัวพร้อมกัน ขจัดปัญหาสายเคเบิลซ้อน (Callback Hell)
     forkJoin({
       orders: this.orderService.getAll(),
       customers: this.customerService.getAll()
@@ -64,6 +65,7 @@ export class Main implements OnInit {
     });
   }
 
+  // สั่งประมวลผลและสร้างใบงานใหม่อีกครั้ง
   regenerate(): void {
     this.generateWorkOrders();
   }

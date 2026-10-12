@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "data": [
+    {
+      "work_id": 4,
+      "job_code": "52ac82f7-2f3d-4c37-a43a-de0316d0ef16",
+      "color": "#F1C40F",
+      "status": "pending",
+      "total_orders": 3,
+      "total_boxes": 4,
+      "created_at": "2026-10-09T07:10:00.000Z",
+      "updated_at": "2026-10-09T07:10:00.000Z",
+      "stops": [
+        {
+          "stop_id": 110,
+          "work_id": 4,
+          "order_id": 1024,
+          "sequence_no": 1,
+          "box_count": 1,
+          "order_note": "หอพักใน ตึก B ห้อง 412",
+          "order_status": "pending",
+          "order_created_at": "2026-10-09T07:00:00.000Z",
+          "customer_id": 4,
+          "customer_name": "นภา มณี",
+          "phone_number": "0812340004",
+          "location_name": "บ้านพักส่วนบุคคลท้ายซอย มมส.",
+          "latitude": 16.244300,
+          "longitude": 103.222200
+        },
+        {
+          "stop_id": 111,
+          "work_id": 4,
+          "order_id": 1004,
+          "sequence_no": 2,
+          "box_count": 1,
+          "order_note": "ขอพริกน้ำปลาเพิ่ม 2 ซอง",
+          "order_status": "pending",
+          "order_created_at": "2026-10-09T07:00:00.000Z",
+          "customer_id": 4,
+          "customer_name": "นภา มณี",
+          "phone_number": "0812340004",
+          "location_name": "บ้านพักส่วนบุคคลท้ายซอย มมส.",
+          "latitude": 16.244300,
+          "longitude": 103.222200
+        },
+        {
+          "stop_id": 112,
+          "work_id": 4,
+          "order_id": 1014,
+          "sequence_no": 3,
+          "box_count": 2,
+          "order_note": "ขอกะเพราแห้งๆ ไม่แฉะ",
+          "order_status": "pending",
+          "order_created_at": "2026-10-09T07:00:00.000Z",
+          "customer_id": 14,
+          "customer_name": "เอกชัย ขยัน",
+          "phone_number": "0812340014",
+          "location_name": "บริษัทขนส่งพัสดุด่วน",
+          "latitude": 16.252600,
+          "longitude": 103.224000
+        }
+      ]
+    }
+  ]
+}
