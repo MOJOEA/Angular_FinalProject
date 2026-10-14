@@ -12,15 +12,6 @@ export interface PlanningOrder {
   direction: string;
 }
 
-
-export interface WorkOrder {
-  work_order_id: string;
-  orders: PlanningOrder[];
-  routeCoordinates?: any[];
-  routeDistance?: String;
-  routeDuration?: String;
-}
-
 export interface ApiResponse {
   success: boolean;
   data: WorkJob[];
@@ -41,6 +32,14 @@ export interface WorkJob {
   duration?: string; // ระยะเวลาเดินทางรวมของ Work นี้
 }
 
+export interface WorkOrder {
+  work_order_id: string;
+  orders: PlanningOrder[];
+  routeCoordinates?: any[];
+  routeDistance?: String;
+  routeDuration?: String;
+}
+
 export interface RouteStop {
   stop_id: number;
   work_id: number;
@@ -48,8 +47,8 @@ export interface RouteStop {
   sequence_no: number;
   box_count: number;
   order_note: string;
-  order_status: 'pending' | 'delivered' | 'cancelled'; // ปรับเปลี่ยนตามสถานะจริงในระบบ
-  order_created_at: string; // ISO Date String
+  order_status: 'pending' | 'delivered' | 'cancelled';
+  order_created_at: string;
   customer_id: number;
   customer_name: string;
   phone_number: string;
