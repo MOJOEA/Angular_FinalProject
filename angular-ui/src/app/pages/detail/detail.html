@@ -1,0 +1,56 @@
+<div class="detail-container">
+  
+  <!-- ฝั่งซ้าย: แผนที่ (ส่ง workId ไปกรองเส้นทาง) -->
+  <div class="map-section">
+    <app-map-view [selectedWorkId]="workId"></app-map-view>
+  </div>
+
+  <!-- ฝั่งขวา: สรุปข้อมูลคำนวณและออเดอร์ -->
+  <div class="sidebar-section">
+    
+    <div class="sidebar-header">
+      <a routerLink="/map" class="back-btn">← กลับหน้าแผนที่หลัก</a>
+      <h2>รายละเอียดใบงาน: {{ workId }}</h2>
+    </div>
+
+    <!-- การคำนวณ รายได้ / ต้นทุน / กำไร -->
+    <div class="financial-cards">
+      <div class="card revenue">
+        <span class="card-label">รายได้รวม</span>
+        <span class="card-value">฿{{ financials.revenue | number }}</span>
+      </div>
+      <div class="card cost">
+        <span class="card-label">ต้นทุนรวม</span>
+        <span class="card-value">฿{{ financials.cost | number }}</span>
+      </div>
+      <div class="card profit" [class.negative]="financials.profit < 0">
+        <span class="card-label">กำไรสุทธิ</span>
+        <span class="card-value">฿{{ financials.profit | number }}</span>
+      </div>
+    </div>
+
+    <!-- รายการออเดอร์ในใบงาน -->
+    <div class="orders-list">
+      <h3>รายการออเดอร์ ({{ orders.length }})</h3>
+
+      <div *ngFor="let order of orders" class="order-item">
+        <div class="order-header">
+          <span class="order-id">{{ order.id }} - {{ order.customerName }}</span>
+          <span class="order-badge" [class.delivered]="order.status === 'delivered'">
+            {{ order.status }}
+          </span>
+        </div>
+        <div class="order-body">
+          <p>จำนวน: {{ order.itemsCount }} รายการ</p>
+          <p>ที่อยู่: {{ order.address }}</p>
+        </div>
+        <div class="order-footer">
+          <span>ยอดเงิน</span>
+          <span class="price">฿{{ order.amount | number }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
