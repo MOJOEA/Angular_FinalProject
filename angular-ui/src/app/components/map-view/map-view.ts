@@ -1,7 +1,7 @@
 // map-view.component.ts
 import { Component, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
-import { WorkJob } from '../../../Model/work'; // 🌟 เปลี่ยนมาอิมพอร์ต Model โครงสร้างจริงปัจจุบันของคุณ
+import { WorkJob } from '../../../Model/work';
 
 const MAP_CONFIG = {
   initCenter: [16.2443, 103.2502] as L.LatLngExpression, // พิกัดจุดศูนย์กลางเริ่มต้นของแผนที่
@@ -11,7 +11,6 @@ const MAP_CONFIG = {
   lineWidth: 6, // ความหนาของเส้นบนแผนที่
   lineOpacity: 0.85, // ความโปร่งแสงของเส้นบนแผนที่
 };
-
 
 @Component({
   selector: 'app-map-view',
