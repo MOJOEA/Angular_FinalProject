@@ -1,22 +1,3 @@
-export interface PlanningOrder {
-  order_id: number;
-  customer_id: number;
-  order_date: string;
-  quantity: number;
-  name: string;
-  phone: string;
-  latitude: number;
-  longitude: number;
-  distanceFromDepot: number;
-  bearing: number;
-  direction: string;
-}
-
-export interface ApiResponse {
-  success: boolean;
-  data: WorkJob[];
-}
-
 export interface WorkJob {
   work_id: number;
   job_code: string;
@@ -50,12 +31,3 @@ export interface RouteStop {
   latitude: number;
   longitude: number;
 }
-
-export interface WorkOrder {
-  work_order_id: string;
-  orders: PlanningOrder[];
-  routeCoordinates?: any[];
-  routeDistance?: String;
-  routeDuration?: String;
-}
-
