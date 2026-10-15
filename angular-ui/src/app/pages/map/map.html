@@ -104,12 +104,13 @@
                 <div class="flex justify-between pt-2 border-t border-slate-200 text-xs">
                   <span class="text-slate-400">Distance (OSRM)</span>
                   <span class="font-medium text-slate-700">
-                    
+                    {{ workOrder.distance_km === undefined ? 'Error' : (workOrder.distance_km.toFixed(2) + ' km') }}
                   </span>
                 </div>
                 <div class="flex justify-between text-xs">
                   <span class="text-slate-400">Duration (OSRM)</span>
                   <span class="font-medium text-slate-700">
+                    {{ workOrder.duration_min === undefined ? 'Error' : (workOrder.duration_min.toFixed(0) + ' mins') }}
                   </span>
                 </div>
               </div>
