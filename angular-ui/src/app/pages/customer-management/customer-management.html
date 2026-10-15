@@ -1,0 +1,160 @@
+<main class="customer-page">
+  <header class="page-header">
+    <div class="title-group">
+      <h1>จัดการข้อมูลลูกค้า</h1>
+    </div>
+    <button class="primary-button add-button" type="button" (click)="openAddDialog()">
+      <span aria-hidden="true" class="material-icons-outlined">add</span>
+      <span>เพิ่มข้อมูลลูกค้าใหม่</span>
+    </button>
+  </header>
+
+  <form class="search-panel" (ngSubmit)="onSearch()">
+    <label class="search-input">
+      <span aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        name="customerSearch"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearch()"
+        placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, อีเมล, รหัส CUST-..."
+        aria-label="ค้นหาลูกค้า"
+      />
+    </label>
+    <button class="primary-button search-button" type="submit">ค้นหา</button>
+  </form>
+
+  <p *ngIf="loading" role="status">กำลังโหลดข้อมูลลูกค้า...</p>
+  <p *ngIf="loadError" class="form-error" role="alert">{{ loadError }}</p>
+
+  <section class="table-card" aria-label="รายการลูกค้า">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <!-- <th class="select-column">
+              <input
+                type="checkbox"
+                [checked]="allVisibleSelected"
+                (change)="toggleVisibleSelection($any($event.target).checked)"
+                aria-label="เลือกลูกค้าทั้งหมดในหน้านี้"
+              />
+            </th> -->
+            <th>รหัส &amp; ข้อมูลลูกค้า</th>
+            <th>ช่องทางติดต่อ</th>
+            <th>ที่อยู่จัดส่งและพิกัดแผนที่</th>
+            <th class="actions-heading">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let customer of visibleCustomers">
+            <!-- <td class="select-column">
+              <input type="checkbox" [(ngModel)]="customer.selected" [name]="'select-' + customer.id" [attr.aria-label]="'เลือกลูกค้า ' + customer.name" />
+            </td> -->
+            <td>
+              <div class="customer-identity">
+
+                <span class="avatar" aria-hidden="true">{{ customer.name.charAt(0) }}</span>
+                <span class="identity-copy">
+                  <strong>{{ customer.name }}</strong>
+                  <small>{{ customer.id }} <span class="identity-separator">·</span> ลูกค้า</small>
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="phone-number"><span aria-hidden="true"></span>{{ customer.phone }}</span>
+            </td>
+            <td>
+              <div class="address-copy">{{ customer.address || 'ไม่มีข้อมูลที่อยู่จัดส่ง' }}</div>
+              <div class="location-row">
+                <span class="coordinates">● {{ customer.lat | number:'1.4-6' }}, {{ customer.lng | number:'1.4-6' }}</span>
+                
+              </div>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="icon-button edit-action" title="แก้ไขข้อมูล" aria-label="แก้ไขข้อมูล" (click)="openEditDialog(customer)">
+                  <span class="material-icons-outlined">edit</span>
+                </button>
+                <button type="button" class="icon-button pin-action" title="ดูแผนที่" aria-label="ดูแผนที่" (click)="viewMap(customer)">
+                  <span class="material-icons-outlined">location_on</span>
+                </button>
+                <button type="button" class="icon-button delete-action" title="ลบข้อมูล" aria-label="ลบข้อมูล" (click)="deleteCustomer(customer)">
+                  <span class="material-icons-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="visibleCustomers.length === 0">
+            <td colspan="5" class="empty-state">ไม่พบข้อมูลลูกค้าที่ตรงกับคำค้นหา</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <span class="result-count">แสดง {{ filteredCustomers.length ? (currentPage - 1) * pageSize + 1 : 0 }}–{{ rangeEnd }} จาก {{ filteredCustomers.length }} รายการ</span>
+      <div class="page-controls">
+        <button type="button" class="page-button arrow-button" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)" aria-label="หน้าก่อนหน้า">‹</button>
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          type="button"
+          class="page-button"
+          [class.active]="currentPage === i + 1"
+          [attr.aria-current]="currentPage === i + 1 ? 'page' : null"
+          (click)="changePage(i + 1)"
+        >{{ i + 1 }}</button>
+        <button type="button" class="page-button arrow-button" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)" aria-label="หน้าถัดไป">›</button>
+      </div>
+    </footer>
+  </section>
+</main>
+
+<div *ngIf="dialogOpen" class="dialog-backdrop" (click)="closeDialog()">
+  <section class="customer-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" (click)="$event.stopPropagation()">
+    <header class="dialog-header">
+      <span class="dialog-symbol" aria-hidden="true">⌖</span>
+      <div>
+        <h2 id="dialog-title">{{ editingCustomerId ? 'แก้ไขข้อมูลลูกค้า' : 'บันทึกข้อมูลลูกค้าใหม่' }}</h2>
+        <p>ระบุข้อมูลติดต่อและปักหมุด GPS สำหรับการขนส่งและจัดส่ง</p>
+      </div>
+      <button type="button" class="close-button" (click)="closeDialog()" aria-label="ปิด">×</button>
+    </header>
+
+    <form (ngSubmit)="saveCustomer()">
+      <div class="form-section">
+        <h3><span aria-hidden="true"></span> 1. ข้อมูลทั่วไปของลูกค้า</h3>
+        <div class="form-grid">
+          <label>ชื่อ-นามสกุล <span>*</span>
+            <input name="customerName" [(ngModel)]="form.name" placeholder="กรอกชื่อ-นามสกุล" required />
+          </label>
+          <label>เบอร์โทรศัพท์มือถือ <span>*</span>
+            <input name="customerPhone" [(ngModel)]="form.phone" type="tel" placeholder="081-452-9876" required />
+          </label>
+          <label class="address-field">หมายเหตุ/ที่อยู่จัดส่ง <span>*</span>
+            <input name="customerAddress" [(ngModel)]="form.address" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด" required />
+          </label>
+        </div>
+      </div>
+
+      <div class="form-section map-section">
+        <h3><span aria-hidden="true"></span> 2. ที่อยู่จัดส่ง และ ปักหมุดแผนที่ (Google Maps Pin)</h3>
+        <div class="map-picker">
+          <div #mapElement class="map-element" aria-label="แผนที่ เลือกตำแหน่งโดยคลิกบนแผนที่"></div>
+          <div class="map-search-hint">⌕ &nbsp;คลิกบนแผนที่เพื่อเลือกตำแหน่ง</div>
+          <div class="coordinate-bar">
+            <span>● &nbsp;Lat: {{ form.lat | number:'1.4-6' }} &nbsp;·&nbsp; Lng: {{ form.lng | number:'1.4-6' }}</span>
+            <span class="selected-pin">ปักหมุดแล้ว</span>
+            <button type="button" class="copy-gps" (click)="copyCoordinates()">{{ clipboardMessage || 'คัดลอกพิกัด GPS' }}</button>
+          </div>
+        </div>
+      </div>
+
+      <p *ngIf="formError" class="form-error" role="alert">{{ formError }}</p>
+      <footer class="dialog-footer">
+        <button type="button" class="cancel-button" (click)="closeDialog()">ยกเลิก</button>
+        <button type="submit" class="primary-button save-button">&nbsp;บันทึกข้อมูลลูกค้า</button>
+      </footer>
+    </form>
+  </section>
+</div>
