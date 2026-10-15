@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, from } from 'rxjs';
+import { mergeMap, toArray } from 'rxjs/operators';
 import { Api } from '../../app/config/api';
 
 import { Coordinate } from '../../Model/coordinate';
@@ -16,7 +17,6 @@ export class RoutesAMapService {
 
   private readonly depot: Coordinate = { latitude: 16.245842, longitude: 103.251458};
 
-  // เรียกใช้ API แผนที่เพื่อค้นหาข้อมูลเส้นทางจากจุดเริ่มต้นไปยังจุดแวะพักต่างๆ
   public getRoute(depot: Coordinate, waypoints: Coordinate[]): Promise<any> {
     let waypointsString = '';
     const len = waypoints.length;
@@ -29,7 +29,7 @@ export class RoutesAMapService {
     return lastValueFrom(this.http.get<any>(`${this.apiEndpoint}/${depot.longitude},${depot.latitude};${waypointsString}?overview=full&steps=true&geometries=geojson`));
   }
 
-  // คำนวณและดึงข้อมูลเส้นทาง ระยะทาง และเวลาสำหรับใบงานเดี่ยวใบเดียว
+  // คำนวณใบงานเดี่ยว
   public async getRouteForSingleWork(work: WorkJob): Promise<WorkJob> {
     const stops = work.stops;
     if (!stops || stops.length === 0) {
@@ -70,13 +70,69 @@ export class RoutesAMapService {
     }
   }
 
-  // คำนวณและดึงข้อมูลเส้นทางพร้อมกันทีละหลายใบงานในรูปแบบขนาน
-  public getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
-    const len = works.length;
-    const promises = new Array(len);
-    for (let i = 0; i < len; i++) {
-      promises[i] = this.getRouteForSingleWork(works[i]);
+  public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
+    if (!works || works.length === 0) return [];
+    const cacheMap = new Map<string, Promise<WorkJob>>();
+    const results: WorkJob[] = [];
+    const pendingWorks: WorkJob[] = [];
+    for (const work of works) {
+      if (!work.stops || work.stops.length === 0) {
+        results.push({
+          ...work,
+          geometry: null,
+          distance_raw: 0,
+          duration_raw: 0,
+          distance_km: 0,
+          duration_min: 0
+        });
+      } else {
+        const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
+        if (cacheMap.has(cacheKey)) {
+          results.push({ ...work, _cacheKey: cacheKey } as any);
+        } else {
+          pendingWorks.push(work);
+          results.push(work); // ใส่ไว้เป็น reference ก่อน
+        }
+      }
     }
-    return Promise.all(promises);
+
+    if (pendingWorks.length > 0) {
+      const CONCURRENT_LIMIT = 6;
+      const uniqueResults = await lastValueFrom(
+        from(pendingWorks).pipe(
+          mergeMap((work) => this.getRouteForSingleWork(work), CONCURRENT_LIMIT),
+          toArray()
+        )
+      );
+
+      for (let i = 0; i < pendingWorks.length; i++) {
+        const originalWork = pendingWorks[i];
+        const cacheKey = originalWork.stops!.map(s => `${s.latitude},${s.longitude}`).join('|');
+        cacheMap.set(cacheKey, Promise.resolve(uniqueResults[i]));
+      }
+    }
+
+    const finalResults = await Promise.all(
+      results.map(async (work: any) => {
+        if (work._cacheKey) {
+          const cachedData = await cacheMap.get(work._cacheKey);
+          return {
+            ...work,
+            geometry: cachedData?.geometry,
+            distance_raw: cachedData?.distance_raw,
+            duration_raw: cachedData?.duration_raw,
+            distance_km: cachedData?.distance_km,
+            duration_min: cachedData?.duration_min
+          };
+        }
+        if (work.stops && work.stops.length > 0) {
+          const cacheKey = work.stops.map((s: any) => `${s.latitude},${s.longitude}`).join('|');
+          return cacheMap.get(cacheKey) || work;
+        }
+        return work;
+      })
+    );
+
+    return finalResults;
   }
 }
