@@ -1,4 +1,4 @@
-export interface Settings {
+export interface SystemSetting {
   id:                           number;
   shop_name:                    string;
   shop_address?:                string;

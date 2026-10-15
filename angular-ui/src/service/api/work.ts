@@ -1,27 +1,36 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { Api } from '../../app/config/api';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 
-import { ApiResponse } from '../../Model/work';
-
+import { WorkJob } from '../../Model/work';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WorkService {
+  http = inject(HttpClient);
+  api = inject(Api);
+  apiEndpoint = this.api.API_ENDPOINT_BACKING;
 
-  private readonly works = 'assets/works.json';
-  private readonly work = 'assets/work.json';
-
-  constructor(private http: HttpClient) {}
-
-  // ดึงข้อมูลกลุ่มใบงานทั้งหมดจากไฟล์จำลอง JSON
-  getAll(): Observable<ApiResponse> {
-      return this.http.get<ApiResponse>(this.works);
+  // GET api/work/
+  public async getAllWork(): Promise<any> {
+    const url = `${this.apiEndpoint}/api/work`;
+    const response = (await lastValueFrom(this.http.get(url))) as { success: boolean; data: WorkJob[];};
+    return response;
   }
 
-  // ดึงข้อมูลใบงานเดี่ยวจากไฟล์จำลอง JSON
-  get(): Observable<ApiResponse> {
-      return this.http.get<ApiResponse>(this.work);
+  // GET api/work/creat
+  public async getWorkCreat(): Promise<any> {
+    const url = `${this.apiEndpoint}/api/work/creat`;
+    const response = (await lastValueFrom(this.http.get(url))) as { success: boolean; data: WorkJob[];};
+    return response;
+  }
+
+  // GET api/work/:id
+  public async getWork(id: number): Promise<any> {
+    const url = `${this.apiEndpoint}/api/work/${id}`;
+    const response = (await lastValueFrom(this.http.get(url))) as { success: boolean; data: WorkJob;};
+    return response;
   }
 }
