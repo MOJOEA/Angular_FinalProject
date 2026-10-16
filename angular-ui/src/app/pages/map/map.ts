@@ -8,13 +8,16 @@ import { SettingService } from '../../../service/api/setting';
 
 import { WorkJob } from '../../../Model/work';
 import { SystemSetting } from '../../../Model/setting';
+
 import { MapViewComponent } from '../../components/map-view/map-view';
+import { Header } from '../../components/header/header';
+
 import { calculateJobProfit, ProfitSummary } from '../../../Util/delivery-calculator';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [MapViewComponent, CommonModule],
+  imports: [MapViewComponent, CommonModule, Header ],
   templateUrl: './map.html',
   styleUrl: './map.css',
 })
