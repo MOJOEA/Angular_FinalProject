@@ -1,38 +1,22 @@
-export interface PlanningOrder {
-  order_id: number;
-  customer_id: number;
-  order_date: string;
-  quantity: number;
-  name: string;
-  phone: string;
-  latitude: number;
-  longitude: number;
-  distanceFromDepot: number;
-  bearing: number;
-  direction: string;
-}
-
-export interface ApiResponse {
-  success: boolean;
-  data: WorkJob[];
-}
-
 export interface WorkJob {
   work_id: number;
   job_code: string;
   color: string;
-  status: 'pending' | 'shipping' | 'completed' | 'cancelled'; // ปรับเปลี่ยนตามสถานะจริงในระบบ
+  status: 'pending' | 'shipping' | 'completed' | 'cancelled';
   total_orders: number;
   total_boxes: number;
-  created_at: string; // ISO Date String
-  updated_at: string; // ISO Date String
+  created_at: string;
+  updated_at: string;
   stops: RouteStop[];
-  geometry?: any; // เก็บ GeoJSON LineString จาก API
+  geometry?: any;
   distance_km?: number; 
   duration_min?: number; 
   distance_raw?: number; 
   duration_raw?: number;
+  distance?: any;
+  duration?: any;
 }
+
 
 export interface RouteStop {
   stop_id: number;
@@ -50,12 +34,3 @@ export interface RouteStop {
   latitude: number;
   longitude: number;
 }
-
-export interface WorkOrder {
-  work_order_id: string;
-  orders: PlanningOrder[];
-  routeCoordinates?: any[];
-  routeDistance?: String;
-  routeDuration?: String;
-}
-
