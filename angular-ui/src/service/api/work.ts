@@ -36,15 +36,15 @@ export class WorkService {
     return response;
   }
 
-  // POST api/work/accept/:id
+  // PUT api/work/accept/:id
   public async acceptWork(id: number): Promise<void> {
     const url = `${this.apiEndpoint}/api/work/accept/${id}`;
-    await lastValueFrom(this.http.post<void>(url, {}));
+    await lastValueFrom(this.http.put<void>(url, {}));
   }
 
-  // POST api/work/logout/:id
+  // PUT api/work/logout/:id
   public async logoutWork(id: number): Promise<void> {
     const url = `${this.apiEndpoint}/api/work/logout/${id}`;
-    await lastValueFrom(this.http.post<void>(url, {}));
+    await lastValueFrom(this.http.put<void>(url, {}));
   }
 }

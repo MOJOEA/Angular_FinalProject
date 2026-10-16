@@ -136,7 +136,9 @@ export class MapViewComponent implements AfterViewInit {
     this.clearRoutes();
     const routeGroup = L.featureGroup();
 
-    const activeLine = this.drawRoutes(activeWork);
+    const activeStop = activeWork.stops[0];
+    // วาดเส้นของจุดปัจจุบันแยกจากหมุด เพื่อจัดลำดับหมุดให้อยู่เหนือ marker ตำแหน่งไรเดอร์
+    const activeLine = this.drawRoutes({ ...activeWork, stops: [] });
     if (activeLine) routeGroup.addLayer(activeLine);
 
     const currentIcon = L.divIcon({
@@ -147,9 +149,23 @@ export class MapViewComponent implements AfterViewInit {
     });
     const currentMarker = L.marker(
       [currentPosition.latitude, currentPosition.longitude],
-      { icon: currentIcon },
+      { icon: currentIcon, zIndexOffset: -1000 },
     ).bindPopup('ตำแหน่งจำลองของไรเดอร์').addTo(this.map);
     this.stopMarkers.push(currentMarker);
+
+    if (activeStop) {
+      const activeIcon = L.divIcon({
+        html: `<div style="width:32px;height:32px;border:3px solid #fff;border-radius:50%;background:${activeWork.color || '#07865f'};color:#fff;display:grid;place-items:center;font-weight:bold;box-shadow:0 2px 6px #0005">${activeStop.sequence_no}</div>`,
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      const activeMarker = L.marker([activeStop.latitude, activeStop.longitude], {
+        icon: activeIcon,
+        zIndexOffset: 1000,
+      }).bindPopup(`จุดส่งปัจจุบัน: ${activeStop.customer_name}`).addTo(this.map);
+      this.stopMarkers.push(activeMarker);
+    }
 
     const nextWork = upcomingWork;
     const upcomingCoordinates = nextWork?.geometry?.coordinates;
@@ -166,8 +182,7 @@ export class MapViewComponent implements AfterViewInit {
       this.routePolylines.push(dashedLine);
       routeGroup.addLayer(dashedLine);
 
-      const nextStop = nextWork.stops[0];
-      if (nextStop) {
+      for (const nextStop of nextWork.stops) {
         const nextIcon = L.divIcon({
           html: `<div style="width:28px;height:28px;border:3px solid #fff;border-radius:50%;background:${nextWork.color || '#07865f'};color:#fff;display:grid;place-items:center;font-weight:bold;box-shadow:0 2px 6px #0005">${nextStop.sequence_no}</div>`,
           className: '',
@@ -176,6 +191,7 @@ export class MapViewComponent implements AfterViewInit {
         });
         const nextMarker = L.marker([nextStop.latitude, nextStop.longitude], {
           icon: nextIcon,
+          zIndexOffset: 900,
         }).bindPopup(`จุดส่งถัดไป: ${nextStop.customer_name}`).addTo(this.map);
         this.stopMarkers.push(nextMarker);
       }

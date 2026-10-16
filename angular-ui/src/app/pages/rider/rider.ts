@@ -16,7 +16,7 @@ const DEMO_CURRENT_POSITION: Coordinate = { latitude: 16.245842, longitude: 103.
   templateUrl: './rider.html',
   styleUrl: './rider.css',
 })
-export class Rider implements OnInit {
+export class Rider {
   readonly mapView = viewChild<MapViewComponent>('mapView');
 
   workId = '';
@@ -27,28 +27,6 @@ export class Rider implements OnInit {
   readonly navigationInfo = signal<{ instruction: string; distance: string; accuracy: number } | null>(null);
 
   constructor(private readonly workService: WorkService, private readonly routesAMapService: RoutesAMapService) {}
-
-  async ngOnInit(): Promise<void> {
-    this.loading.set(true);
-    try {
-      // Restore an active work from the API instead of Local Storage.
-      const response = await this.workService.getAllWork();
-      const works: WorkJob[] = Array.isArray(response?.data) ? response.data : [];
-      const activeWorks = works.filter((work) => work.status === 'shipping');
-
-      if (activeWorks.length === 1) {
-        this.workId = String(activeWorks[0].work_id);
-        await this.loadWorkById(activeWorks[0].work_id, true);
-      } else if (activeWorks.length > 1) {
-        this.errorMessage.set('พบใบงานที่กำลังจัดส่งหลายใบ จึงไม่สามารถกู้ใบงานอัตโนมัติได้');
-      }
-    } catch (error) {
-      this.errorMessage.set('โหลดใบงานจาก API ไม่สำเร็จ ตรวจสอบ backend แล้วลองใหม่');
-      console.error('กู้ใบงานจาก API ไม่สำเร็จ:', error);
-    } finally {
-      this.loading.set(false);
-    }
-  }
 
   async searchWork(): Promise<void> {
     const id = Number(String(this.workId ?? '').trim());
@@ -191,19 +169,20 @@ export class Rider implements OnInit {
       },
     };
 
-    const secondStop = work.stops[1];
-    const secondIndex = secondStop ? nearestIndex(secondStop) : -1;
+    const upcomingStops = work.stops.slice(1);
+    const lastUpcomingStop = upcomingStops[upcomingStops.length - 1];
+    const lastUpcomingIndex = lastUpcomingStop ? nearestIndex(lastUpcomingStop) : -1;
     const upcomingWork: WorkJob | undefined =
-      secondStop && secondIndex > firstIndex
+      upcomingStops.length > 0 && lastUpcomingIndex > firstIndex
         ? {
             ...work,
-            total_orders: 1,
-            total_boxes: secondStop.box_count,
-            stops: [secondStop],
+            total_orders: upcomingStops.length,
+            total_boxes: upcomingStops.reduce((total, stop) => total + Number(stop.box_count || 0), 0),
+            stops: upcomingStops,
             geometry: {
               ...work.geometry,
               type: "LineString",
-              coordinates: coordinates.slice(firstIndex, secondIndex + 1),
+              coordinates: coordinates.slice(firstIndex, lastUpcomingIndex + 1),
             },
           }
         : undefined;
