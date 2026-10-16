@@ -96,7 +96,7 @@
 
         <div class="flex flex-col gap-3">
           @for (workOrder of workOrders(); track workOrder.job_code) {
-            @if (logWorkOrder(workOrder)) {
+            @if (workOrder.stops?.length) {
               <article (click)="selectOrderOnMap(workOrder.job_code)"
                 class="p-4 rounded-xl border border-slate-200 border-l-4 bg-slate-50 hover:bg-white hover:shadow-sm transition cursor-pointer min-w-0"
                 [class.ring-2]="selectedJob()?.job_code === workOrder.job_code"

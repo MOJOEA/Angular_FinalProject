@@ -1,16 +1,12 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-
 import { WorkService } from '../../../service/api/work';
 import { RoutesAMapService } from '../../../service/api/routesamap';
 import { SettingService } from '../../../service/api/setting';
-
 import { WorkJob } from '../../../Model/work';
 import { SystemSetting } from '../../../Model/setting';
-
 import { MapViewComponent } from '../../components/map-view/map-view';
-
 import { calculateJobProfit, ProfitSummary } from '../../../Util/delivery-calculator';
 
 @Component({
@@ -22,7 +18,6 @@ import { calculateJobProfit, ProfitSummary } from '../../../Util/delivery-calcul
 })
 export class Map implements OnInit {
   readonly mapView = viewChild<MapViewComponent>('mapView');
-
   loading = signal<boolean>(false);
   errorMessage = signal<string>('');
   workOrders = signal<WorkJob[]>([]);
@@ -41,23 +36,18 @@ export class Map implements OnInit {
     private settingService: SettingService
   ) {}
 
+  // ฟังก์ชัน: เริ่มต้นโหลดการตั้งค่าระบบ
   async ngOnInit(): Promise<void> {
     await this.fetchSystemSetting();
   }
 
+  // ฟังก์ชัน: ดึงและแปลงการตั้งค่าจาก Backend ก่อนโหลดใบงาน
   async fetchSystemSetting(): Promise<void> {
     try {
-      // 1. เรียกใช้ฟังก์ชัน get() จาก SettingService
       const res: any = await firstValueFrom(this.settingService.get());
-
-      //เพิ่ม 
-      console.log('✅ ข้อมูล Setting จาก Backend:', res);
-      
-// เช็คว่ามี res.data ส่งกลับมาหรือไม่
+      console.log('ข้อมูล Setting จาก Backend:', res);
       if (res && res.data) {
         const rawData = res.data;
-
-        // แปลงชื่อฟิลด์จาก Backend (เช่น box_price) และเปลี่ยนค่า String เป็น Number
         const formattedSetting: any = {
           ...rawData,
           price_per_box: parseFloat(rawData.box_price || 0),
@@ -67,9 +57,8 @@ export class Map implements OnInit {
           distance_rate_per_km: parseFloat(rawData.rider_fee_box || 5),
           delivery_deadline_mins: rawData.deadline_time || 60
         };
-
         this.systemSetting.set(formattedSetting);
-        console.log('✅ แปลงข้อมูล Setting สำเร็จ:', formattedSetting);
+        console.log('แปลงข้อมูล Setting สำเร็จ:', formattedSetting);
       }
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลการตั้งค่า:', error);
@@ -77,6 +66,7 @@ export class Map implements OnInit {
     await this.loadWorkOrders();
   }
 
+  // ฟังก์ชัน: ดึงใบงาน ประมวลผลเส้นทาง และแสดงผลบนแผนที่
   private async fetchAndProcessWork(fetchApi: () => Promise<any>): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
@@ -84,7 +74,6 @@ export class Map implements OnInit {
     try {
       const res = await fetchApi();
       const mockWorks: WorkJob[] = res?.data || [];
-
       if (mockWorks.length === 0) {
         this.workOrders.set([]);
         this.selectedJob.set(null);
@@ -92,7 +81,6 @@ export class Map implements OnInit {
         this.errorMessage.set('ไม่พบข้อมูลใบงานจำลองในระบบ');
         return;
       }
-
       const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
       this.workOrders.set(worksWithRoutes);
       this.selectedJob.set(null);
@@ -105,39 +93,36 @@ export class Map implements OnInit {
     }
   }
 
+  // ฟังก์ชัน: โหลดใบงานทั้งหมดจากระบบ
   async loadWorkOrders(): Promise<void> {
     await this.fetchAndProcessWork(() => firstValueFrom(this.workService.getAllWork()));
   }
 
+  // ฟังก์ชัน: สร้างใบงานและแสดงเส้นทาง
   async generateWorkOrders(): Promise<void> {
     await this.fetchAndProcessWork(() => firstValueFrom(this.workService.getWorkCreat()));
   }
 
+  // ฟังก์ชัน: เลือกใบงานและแสดงเส้นทางเฉพาะรายการ
   selectOrderOnMap(job_code: string): void {
-    const workOrder = this.workOrders().find((wo) => wo.job_code === job_code);
-    if (workOrder) { 
+    const workOrder = this.workOrders().find(wo => wo.job_code === job_code);
+    if (workOrder) {
       this.selectedJob.set(workOrder);
       this.mapView()?.drawSingleRoute(workOrder);
     }
   }
 
+  // ฟังก์ชัน: แสดงเส้นทางใบงานทั้งหมดบนแผนที่
   showAllOrdersOnMap(): void {
     this.selectedJob.set(null);
     this.mapView()?.drawAllRoutes(this.workOrders());
   }
 
+  // ฟังก์ชัน: ล้างใบงานและเส้นทางบนแผนที่
   clearWorkOrders(): void {
     this.selectedJob.set(null);
     this.workOrders.set([]);
-    this.selectedJob.set(null);
     this.errorMessage.set('');
     this.mapView()?.clearRoutes();
   }
-
-  logWorkOrder(workOrder: any) {
-  console.log('WorkOrder:', workOrder);
-  console.log('Stops:', workOrder.stops);
-  console.log('Stops length:', workOrder.stops?.length);
-  return !!workOrder.stops?.length;
-}
 }
