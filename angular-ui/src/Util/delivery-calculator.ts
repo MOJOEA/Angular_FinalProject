@@ -148,7 +148,7 @@ export function calculateProfitFromValues(
     totalRevenue: parseFloat(totalRevenue.toFixed(2)),
     foodCost: parseFloat(foodCost.toFixed(2)),
     grossProfit: parseFloat(grossProfit.toFixed(2)),
-    riderBaseFee: parseFloat(riderBaseFee.toFixed(2)),
+    riderBaseFee: parseFloat(Number(riderBaseFee || 0).toFixed(2)),
     riderDistanceFee: parseFloat(riderDistanceFee.toFixed(2)),
     totalRiderCost: parseFloat(totalRiderCost.toFixed(2)),
     netProfit: parseFloat(netProfit.toFixed(2)),

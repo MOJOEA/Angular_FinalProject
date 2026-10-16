@@ -59,11 +59,28 @@ export class Map implements OnInit {
   async fetchSystemSetting(): Promise<void> {
     try {
       // 1. เรียกใช้ฟังก์ชัน get() จาก SettingService
-      const res = await firstValueFrom(this.settingService.get());
+      const res: any = await firstValueFrom(this.settingService.get());
+
+      //เพิ่ม 
+      console.log('✅ ข้อมูล Setting จาก Backend:', res);
       
-      // 2. เนื่องจาก res เป็น Array (SystemSetting[]) จึงดึงตัวเลือกแรก res[0]
-      if (res && res.length > 0) {
-        this.systemSetting.set(res[0]);
+// เช็คว่ามี res.data ส่งกลับมาหรือไม่
+      if (res && res.data) {
+        const rawData = res.data;
+
+        // แปลงชื่อฟิลด์จาก Backend (เช่น box_price) และเปลี่ยนค่า String เป็น Number
+        const formattedSetting: any = {
+          ...rawData,
+          price_per_box: parseFloat(rawData.box_price || 0),
+          food_cost_per_box: parseFloat(rawData.box_cost || 0),
+          base_rider_fee: parseFloat(rawData.rider_base_fee || 0),
+          rider_base_fee: Number(rawData.rider_base_fee) || 0,
+          distance_rate_per_km: parseFloat(rawData.rider_fee_box || 5),
+          delivery_deadline_mins: rawData.deadline_time || 60
+        };
+
+        this.systemSetting.set(formattedSetting);
+        console.log('✅ แปลงข้อมูล Setting สำเร็จ:', formattedSetting);
       }
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลการตั้งค่า:', error);
@@ -103,17 +120,20 @@ export class Map implements OnInit {
   selectOrderOnMap(job_code: string): void {
     const workOrder = this.workOrders().find((wo) => wo.job_code === job_code);
     if (workOrder) { 
+      this.selectedJob.set(workOrder);
       this.mapView()?.drawSingleRoute(workOrder);
     }
   }
 
   // สั่งให้แผนที่แสดงเส้นทางของทุกใบงานพร้อมกันทั้งหมดอีกครั้ง
   showAllOrdersOnMap(): void {
+    this.selectedJob.set(null);
     this.mapView()?.drawAllRoutes(this.workOrders());
   }
 
   // ล้างค่าข้อมูลใบงานและลบเส้นทางทั้งหมดออกจากแผนที่
   clearWorkOrders(): void {
+    this.selectedJob.set(null);
     this.workOrders.set([]);
     this.mapView()?.clearRoutes();
   }
