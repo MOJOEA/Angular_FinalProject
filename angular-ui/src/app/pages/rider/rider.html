@@ -1,1 +1,137 @@
-<p>rider works!</p>
+<main class="rider-page">
+    @if (!selectedWork()) {
+    <section class="search-page">
+        <h1>ระบบจัดส่งอาหาร</h1>
+        <p>กรอก ID ใบงานเพื่อดูรายละเอียดการจัดส่ง</p>
+
+        <label for="workId">ID ใบงาน</label>
+        <input id="workId" type="number" [(ngModel)]="workId" placeholder="เช่น 1001" (keyup.enter)="searchWork()" />
+
+        @if (loading()) {
+        <p class="info">กำลังโหลดใบงาน…</p>
+        }
+
+        @if (notice()) {
+        <p class="info">{{ notice() }}</p>
+        }
+
+        @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+        }
+
+        <button class="primary-button" type="button" (click)="searchWork()" [disabled]="loading()">
+            ค้นหาใบงาน
+        </button>
+
+        <small>กรอกรหัสใบงานที่ได้รับจากระบบ</small>
+    </section>
+    } @else {
+    @if (selectedWork(); as work) {
+    <header class="topbar">
+        <button type="button" class="back-button" (click)="goBack()">‹</button>
+        <strong>รายละเอียดใบงาน</strong>
+        <span class="status">{{ work.status }}</span>
+    </header>
+
+    <section class="details-page">
+        <section id="rider-map" class="map-panel">
+            <app-map-view #mapView class="block flex-1 h-full"></app-map-view>
+            @if (navigationInfo(); as navigation) {
+            <div class="route-banner">
+                <button class="route-banner-icon" type="button" (click)="stopNavigation()">↶</button>
+                <span class="route-banner-copy">
+                    <strong>{{ navigation.instruction }}</strong>
+                    <small>{{ navigation.distance }} · GPS จำลอง (±{{ navigation.accuracy }} ม.)</small>
+                </span>
+            </div>
+            }
+        </section>
+
+        <section class="bottom-sheet" [class.expanded]="sheetExpanded" [class.navigation-active]="navigationInfo() !== null">
+            <div class="sheet-handle-area" (pointerdown)="startSheetDrag($event)" (pointerup)="endSheetDrag($event)"
+                (pointercancel)="endSheetDrag($event)">
+                <span class="sheet-handle"></span>
+            </div>
+
+            <p class="map-caption">⌃ แตะหรือเลื่อนขึ้นเพื่อดูรายละเอียดงานทั้งหมด</p>
+
+            <section class="work-summary">
+                <div class="delivery-heading">
+                    <h2><span class="live-dot"></span>รอบจัดส่งปัจจุบัน ({{ work.stops.length }} จุด)</h2>
+                    <span class="summary-count">{{ work.total_orders }} คำสั่งซื้อ</span>
+                </div>
+
+                <div class="summary-panel">
+                    <div class="summary-total">
+                        <span><b>▦</b> จำนวนกล่องทั้งหมด</span>
+                        <strong>{{ work.total_boxes }} กล่อง</strong>
+                    </div>
+                    <div class="summary-grid">
+                        <div class="summary-tile">
+                            <small>ระยะทางรวม</small>
+                            <strong>{{ work.distance_km !== undefined ? (work.distance_km.toFixed(1) + ' กม.') : '—' }}</strong>
+                        </div>
+                        <div class="summary-tile">
+                            <small>เวลาโดยประมาณ</small>
+                            <strong class="green">{{ work.duration_min !== undefined ? ('~' + work.duration_min.toFixed(0) + ' นาที') : '—' }}</strong>
+                        </div>
+                        <div class="summary-tile">
+                            <small>สถานะคิวของรถ</small>
+                            <strong class="status-text">{{ work.status === 'pending' ? 'รอจัดส่ง' : work.status === 'shipping' ? 'กำลังจัดส่ง' : work.status === 'completed' ? 'เสร็จแล้ว' : 'ยกเลิก' }}</strong>
+                        </div>
+                    </div>
+                    <p class="sequence-summary">
+                        ลำดับ:
+                        @for (stop of work.stops; track stop.stop_id; let i = $index) {
+                            {{ i === 0 ? '' : ' → ' }}จุด {{ stop.sequence_no }} ({{ stop.customer_name }})
+                        }
+                    </p>
+                </div>
+            </section>
+
+            <section class="orders">
+                <div class="orders-heading">
+                    <h2>ลำดับการส่งที่แต่ละจุด</h2>
+                    <small>เรียบร้อย 0/{{ work.stops.length }} จุด</small>
+                </div>
+
+                @for (stop of work.stops; track stop.stop_id; let i = $index) {
+                <article class="order-card" [class.active-order-card]="i === 0">
+                    <div class="order-heading">
+                        <span class="sequence">{{ stop.sequence_no }}</span>
+                        <div class="stop-title">
+                            <strong>{{ stop.customer_name }}</strong>
+                            <small [class.current-stop]="i === 0">{{ i === 0 ? '● กำลังเดินทาง' : '◯ คิวถัดไป' }}</small>
+                        </div>
+                        <span class="boxes">▣ ส่ง {{ stop.box_count }} กล่อง</span>
+                    </div>
+
+                    <div class="stop-address">⌖ {{ stop.location_name }}</div>
+                    <div class="stop-meta">
+                        @if (stop.order_note) {
+                            <span>หมายเหตุ: {{ stop.order_note }}</span>
+                        } @else {
+                            <span>ออเดอร์ #{{ stop.order_id }} · โทร {{ stop.phone_number }}</span>
+                        }
+                    </div>
+
+                    <button class="secondary-button" type="button" (click)="showStopNavigation(work, stop)">
+                        {{ i === 0 ? '◎ เปิดแผนที่นำทาง GPS' : '△ เปิดแผนที่นำทาง GPS (จุด ' + stop.sequence_no + ')' }}
+                    </button>
+                </article>
+                } @empty {
+                <p class="info">ใบงานนี้ยังไม่มีจุดจัดส่ง</p>
+                }
+            </section>
+
+            <button class="start-button" type="button" (click)="startNavigation(work)">
+                ➤ เริ่มนำทางไปจุดที่ 1 ทันที ({{ work.stops[0]?.customer_name }})
+            </button>
+        </section>
+    </section>
+        }
+        }
+</main>
+
+
+
