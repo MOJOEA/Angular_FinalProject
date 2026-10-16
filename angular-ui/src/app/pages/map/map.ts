@@ -1,7 +1,6 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common'; // เพิ่มสำหรับใช้ | number ใน Template (ถ้าเป็น Standalone)
 import { firstValueFrom } from 'rxjs';
-import { Component, OnInit, signal, viewChild } from '@angular/core';
 
 import { WorkService } from '../../../service/api/work'; 
 import { RoutesAMapService } from '../../../service/api/routesamap'; 

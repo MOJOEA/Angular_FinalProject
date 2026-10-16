@@ -7,8 +7,6 @@ import { WorkService } from '../../../service/api/work';
 import { RoutesAMapService } from '../../../service/api/routesamap';
 import { MapViewComponent } from '../../components/map-view/map-view';
 
-const WORK_ID_KEY = 'driver-work-id';
-
 const DEMO_CURRENT_POSITION: Coordinate = { latitude: 16.245842, longitude: 103.251458 };
 
 @Component({
@@ -30,16 +28,30 @@ export class Rider implements OnInit {
 
   constructor(private readonly workService: WorkService, private readonly routesAMapService: RoutesAMapService) {}
 
-  ngOnInit(): void {
-    const savedId = localStorage.getItem(WORK_ID_KEY);
-    if (!savedId) return;
+  async ngOnInit(): Promise<void> {
+    this.loading.set(true);
+    try {
+      // Restore an active work from the API instead of Local Storage.
+      const response = await this.workService.getAllWork();
+      const works: WorkJob[] = Array.isArray(response?.data) ? response.data : [];
+      const activeWorks = works.filter((work) => work.status === 'shipping');
 
-    this.workId = savedId;
-    void this.loadWorkById(Number(savedId), true);
+      if (activeWorks.length === 1) {
+        this.workId = String(activeWorks[0].work_id);
+        await this.loadWorkById(activeWorks[0].work_id, true);
+      } else if (activeWorks.length > 1) {
+        this.errorMessage.set('พบใบงานที่กำลังจัดส่งหลายใบ จึงไม่สามารถกู้ใบงานอัตโนมัติได้');
+      }
+    } catch (error) {
+      this.errorMessage.set('โหลดใบงานจาก API ไม่สำเร็จ ตรวจสอบ backend แล้วลองใหม่');
+      console.error('กู้ใบงานจาก API ไม่สำเร็จ:', error);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   async searchWork(): Promise<void> {
-    const id = Number(this.workId.trim());
+    const id = Number(String(this.workId ?? '').trim());
     if (!Number.isSafeInteger(id) || id < 1) {
       this.selectedWork.set(null);
       this.errorMessage.set("กรอกรหัสใบงานเป็นตัวเลขให้ถูกต้อง");
@@ -56,11 +68,10 @@ export class Rider implements OnInit {
 
     try {
       const response = await this.workService.getWork(id);
-      const work: WorkJob | null = response?.data ?? response?.work ?? null;
+      let work: WorkJob | null = response?.data ?? response?.work ?? null;
 
       if (response?.success === false || !work || Number(work.work_id) !== id) {
         if (restoring) {
-          localStorage.removeItem(WORK_ID_KEY);
           this.workId = "";
         }
         this.selectedWork.set(null);
@@ -79,15 +90,14 @@ export class Rider implements OnInit {
         work.status = "shipping";
       } else {
         if (restoring) {
-          localStorage.removeItem(WORK_ID_KEY);
           this.workId = "";
         }
         this.selectedWork.set(null);
         this.errorMessage.set("ใบงานนี้ไม่พร้อมให้จัดส่ง");
         return;
       }
-
-      localStorage.setItem(WORK_ID_KEY, String(id));
+      // Add OSRM geometry so navigation can draw the road route.
+      work = await this.routesAMapService.getRouteForSingleWork(work);
       this.workId = String(id);
       this.selectedWork.set(work);
       this.errorMessage.set("");
@@ -96,7 +106,6 @@ export class Rider implements OnInit {
       this.selectedWork.set(null);
 
       if (restoring && status === 404) {
-        localStorage.removeItem(WORK_ID_KEY);
         this.workId = "";
         this.errorMessage.set("");
       } else if (status === 404) {
@@ -230,7 +239,6 @@ export class Rider implements OnInit {
     this.loading.set(true);
     try {
       await this.workService.logoutWork(work.work_id);
-      localStorage.removeItem(WORK_ID_KEY);
       this.workId = "";
       this.navigationInfo.set(null);
       this.mapView()?.clearRoutes();

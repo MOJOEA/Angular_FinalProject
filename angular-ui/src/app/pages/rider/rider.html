@@ -5,7 +5,7 @@
         <p>กรอก ID ใบงานเพื่อดูรายละเอียดการจัดส่ง</p>
 
         <label for="workId">ID ใบงาน</label>
-        <input id="workId" type="number" [(ngModel)]="workId" placeholder="เช่น 1001" (keyup.enter)="searchWork()" />
+        <input id="workId" type="text" inputmode="numeric" pattern="[0-9]*" [(ngModel)]="workId" placeholder="เช่น 1001" (keyup.enter)="searchWork()" />
 
         @if (loading()) {
         <p class="info">กำลังโหลดใบงาน…</p>
