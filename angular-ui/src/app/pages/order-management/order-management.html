@@ -1,0 +1,176 @@
+<main class="orders-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">ORDER MANAGEMENT</p>
+      <h1>จัดการออเดอร์</h1>
+      <p class="page-description">ดูรายการ สร้างออเดอร์ใหม่ และแก้ไขข้อมูลการสั่งซื้อ</p>
+    </div>
+    <button class="primary-button add-button" type="button" (click)="openAddDialog()">
+      <span aria-hidden="true">＋</span>
+      <span>สร้างออเดอร์ใหม่</span>
+    </button>
+  </header>
+
+  <section class="summary-grid" aria-label="สรุปข้อมูลออเดอร์">
+    <article class="summary-card">
+      <span class="summary-icon orders-icon" aria-hidden="true">▤</span>
+      <div><span class="summary-label">ออเดอร์ทั้งหมด</span><strong>{{ orders.length }}</strong></div>
+    </article>
+    <article class="summary-card">
+      <span class="summary-icon quantity-icon" aria-hidden="true">▦</span>
+      <div><span class="summary-label">จำนวนกล่องรวม</span><strong>{{ totalQuantity }}</strong></div>
+    </article>
+    <article class="summary-card">
+      <span class="summary-icon customer-icon" aria-hidden="true">♙</span>
+      <div><span class="summary-label">ลูกค้าที่สั่งซื้อ</span><strong>{{ customerCount }}</strong></div>
+    </article>
+  </section>
+
+  <form class="search-panel" (ngSubmit)="onSearch()">
+    <label class="search-input">
+      <span aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        name="orderSearch"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearch()"
+        placeholder="ค้นหารหัสออเดอร์ ชื่อลูกค้า หรือวันที่"
+        aria-label="ค้นหาออเดอร์"
+      />
+    </label>
+    <span class="order-count">{{ filteredOrders.length }} รายการ</span>
+  </form>
+
+  <p *ngIf="loading" class="status-message" role="status">กำลังโหลดรายการออเดอร์...</p>
+  <p *ngIf="loadError" class="error-message" role="alert">{{ loadError }}</p>
+
+  <section class="table-card" aria-label="รายการออเดอร์">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>รหัสออเดอร์</th>
+            <th>ลูกค้า</th>
+            <th>วันที่สั่งซื้อ</th>
+            <th>จำนวนกล่อง</th>
+            <th>หมายเหตุ</th>
+            <th>สถานะ</th>
+            <th class="action-heading">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let order of visibleOrders"
+            class="order-row"
+            tabindex="0"
+            [attr.aria-label]="'แก้ไขออเดอร์ ' + order.order_id"
+            (click)="openEditDialog(order)"
+            (keydown.enter)="openEditDialog(order)"
+            (keydown.space)="$event.preventDefault(); openEditDialog(order)"
+          >
+            <td><span class="order-id">#{{ order.order_id }}</span></td>
+            <td>
+              <div class="customer-cell">
+                <span class="customer-avatar" aria-hidden="true">{{ customerName(order.customer_id).charAt(0) }}</span>
+                <span>
+                  <strong>{{ customerName(order.customer_id) }}</strong>
+                  <small>รหัสลูกค้า {{ order.customer_id }}</small>
+                </span>
+              </div>
+            </td>
+            <td><span class="date-cell">{{ order.created_at | date:'d MMM yyyy' }}</span></td>
+            <td><span class="quantity-badge">{{ order.box_count }} กล่อง</span></td>
+            <td><span class="note-cell">{{ order.order_note || '—' }}</span></td>
+            <td>
+              <span
+                class="status-badge"
+                [class.status-pending]="order.status === 'pending'"
+                [class.status-delivered]="order.status === 'delivered'"
+                [class.status-cancelled]="order.status === 'cancelled'"
+              >
+                {{ statusLabel(order.status) }}
+              </span>
+            </td>
+            <td class="action-cell">
+              <span class="edit-hint">แก้ไข</span>
+              <button
+                type="button"
+                class="delete-button"
+                [disabled]="deletingOrderId !== null"
+                [attr.aria-label]="'ลบออเดอร์ ' + order.order_id"
+                (click)="$event.stopPropagation(); deleteOrder(order)"
+              >
+                {{ deletingOrderId === order.order_id ? 'กำลังลบ...' : 'ลบ' }}
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && visibleOrders.length === 0">
+            <td colspan="7" class="empty-state">ไม่พบรายการออเดอร์ที่ตรงกับคำค้นหา</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <span class="result-count">
+        แสดง {{ filteredOrders.length ? (currentPage - 1) * pageSize + 1 : 0 }}–{{ rangeEnd }}
+        จาก {{ filteredOrders.length }} รายการ
+      </span>
+      <div class="page-controls">
+        <button type="button" class="page-button arrow-button" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)" aria-label="หน้าก่อนหน้า">‹</button>
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          type="button"
+          class="page-button"
+          [class.active]="currentPage === i + 1"
+          [attr.aria-current]="currentPage === i + 1 ? 'page' : null"
+          (click)="changePage(i + 1)"
+        >{{ i + 1 }}</button>
+        <button type="button" class="page-button arrow-button" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)" aria-label="หน้าถัดไป">›</button>
+      </div>
+    </footer>
+  </section>
+</main>
+
+<div *ngIf="dialogOpen" class="dialog-backdrop" (click)="closeDialog()">
+  <section class="order-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" (click)="$event.stopPropagation()">
+    <header class="dialog-header">
+      <span class="dialog-symbol" aria-hidden="true">▤</span>
+      <div>
+        <h2 id="dialog-title">{{ editingOrderId ? 'แก้ไขออเดอร์ #' + editingOrderId : 'สร้างออเดอร์ใหม่' }}</h2>
+        <p>กรอกรายละเอียดลูกค้า จำนวนกล่อง และหมายเหตุ</p>
+      </div>
+      <button type="button" class="close-button" (click)="closeDialog()" aria-label="ปิด">×</button>
+    </header>
+
+    <form (ngSubmit)="saveOrder()">
+      <div class="form-content">
+        <label>
+          ลูกค้า <span>*</span>
+          <select name="customerId" [(ngModel)]="form.customer_id" required>
+            <option [ngValue]="0" disabled>เลือกลูกค้า</option>
+            <option *ngFor="let customer of customers" [ngValue]="customer.customer_id">
+              {{ customer.name }} ({{ customer.customer_id }})
+            </option>
+          </select>
+        </label>
+        <label>
+          จำนวนกล่อง <span>*</span>
+          <input name="boxCount" type="number" min="1" step="1" [(ngModel)]="form.box_count" required />
+        </label>
+        <label>
+          หมายเหตุ
+          <textarea name="orderNote" rows="3" [(ngModel)]="form.order_note" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+        </label>
+      </div>
+
+      <p *ngIf="formError" class="form-error" role="alert">{{ formError }}</p>
+      <footer class="dialog-footer">
+        <button type="button" class="cancel-button" [disabled]="saving" (click)="closeDialog()">ยกเลิก</button>
+        <button type="submit" class="primary-button save-button" [disabled]="saving">
+          {{ saving ? 'กำลังบันทึก...' : (editingOrderId ? 'บันทึกการแก้ไข' : 'สร้างออเดอร์') }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
