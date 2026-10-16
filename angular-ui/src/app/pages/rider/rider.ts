@@ -91,7 +91,7 @@ export class Rider implements OnInit {
     this.notice.set("");
 
     try {
-      const response = await firstValueFrom(this.workService.getWork(id));
+      const response = await this.workService.getWork(id);
       let work: WorkJob | null = response?.data ?? null;
 
       if (response?.success === false || !work || Number(work.work_id) !== id) {

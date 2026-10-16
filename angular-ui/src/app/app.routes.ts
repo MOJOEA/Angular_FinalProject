@@ -5,7 +5,7 @@ import { CustomerManagement } from './pages/customer-management/customer-managem
 import { OrderManagement } from './pages/order-management/order-management';
 
 export const routes: Routes = [
-    { path: 'map', component: Map },
+    { path: '', component: Map },
     { path: 'rider', component: Rider },
     { path: 'customer', component: CustomerManagement },
     { path: 'order', component: OrderManagement },
