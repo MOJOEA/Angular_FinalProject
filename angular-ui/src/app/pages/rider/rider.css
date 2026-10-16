@@ -1,13 +1,13 @@
 :host {
   display: block;
   min-height: 100dvh;
-  color: #17382f;
-  background: #f3f6f5;
-  font-family: Arial, sans-serif;
+  color: #172b26;
+  background: #f2f6f4;
+  font-family: Inter, "Noto Sans Thai", Arial, sans-serif;
 }
 
 .rider-page {
-  width: min(100%, 460px);
+  width: min(100%, 520px);
   height: 100dvh;
   overflow: hidden;
   overscroll-behavior-y: contain;
@@ -18,12 +18,60 @@
 }
 
 .search-page {
+  display: grid;
+  min-height: 100%;
+  box-sizing: border-box;
+  place-items: center;
   padding: 28px 22px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(16 185 129 / 14%), transparent 42%),
+    linear-gradient(155deg, #f8fbf9, #edf5f1);
+}
+
+.search-card {
+  width: min(100%, 420px);
+  box-sizing: border-box;
+  padding: 36px;
+  border: 1px solid rgb(222 234 228 / 85%);
+  border-radius: 24px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 24px 70px rgb(21 65 49 / 10%);
+}
+
+.brand-mark {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  margin-bottom: 26px;
+  place-items: center;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(145deg, #0e9f6e, #08744f);
+  box-shadow: 0 9px 20px rgb(8 134 95 / 22%);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.eyebrow {
+  color: #13835e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
 }
 
 .search-page h1 {
-  margin-top: 36px;
-  font-size: 22px;
+  margin: 10px 0;
+  color: #183b30;
+  font-size: 30px;
+  line-height: 1.4;
+  letter-spacing: -.035em;
+}
+
+.search-page .search-description {
+  margin: 0 0 28px;
+  color: #71817b;
+  font-size: 13px;
+  line-height: 1.8;
 }
 
 .search-page p,
@@ -35,17 +83,27 @@
 
 .search-page label {
   display: block;
-  margin: 28px 0 8px;
+  margin: 0 0 8px;
+  color: #263d34;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .search-page input {
   box-sizing: border-box;
   width: 100%;
-  padding: 13px;
-  border: 1px solid #dce5e1;
-  border-radius: 10px;
-  font-size: 16px;
+  padding: 15px 14px;
+  border: 1px solid #dbe6e0;
+  border-radius: 12px;
+  outline: none;
+  background: #fbfdfc;
+  font-size: 15px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.search-page input:focus {
+  border-color: #0b9a6a;
+  box-shadow: 0 0 0 4px rgb(11 154 106 / 11%);
 }
 
 .search-page small {
@@ -58,13 +116,45 @@
 .start-button {
   width: 100%;
   margin-top: 14px;
-  padding: 13px;
+  padding: 14px 16px;
   border: 0;
   border-radius: 10px;
   color: white;
-  background: #07865f;
+  background: linear-gradient(110deg, #098c62, #087151);
   font-size: 14px;
   font-weight: 700;
+}
+
+.primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 18px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgb(8 134 95 / 18%);
+}
+
+.primary-button span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.secure-note {
+  margin-top: 22px;
+  color: #83918b;
+  font-size: 10px;
+  text-align: center;
+}
+
+.secure-note span {
+  margin-right: 6px;
+  color: #0c9a69;
+  font-size: 8px;
 }
 
 .error {
@@ -82,11 +172,12 @@
 
 .topbar {
   display: flex;
-  height: 50px;
+  height: 58px;
   align-items: center;
   gap: 12px;
-  padding: 0 14px;
-  border-bottom: 1px solid #edf1ef;
+  padding: 0 24px;
+  border-bottom: 1px solid #e9efec;
+  background: rgb(255 255 255 / 94%);
 }
 
 .topbar strong {
@@ -388,7 +479,7 @@
 .details-page {
   position: relative;
   box-sizing: border-box;
-  height: calc(100dvh - 50px);
+  height: calc(100dvh - 58px);
   padding-bottom: 0;
   overflow: hidden;
 }
@@ -496,6 +587,206 @@
   padding: 5px 8px;
   border-radius: 20px;
   background: rgb(255 255 255 / 12%);
+}
+
+@media (min-width: 900px) {
+  .rider-page {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    background: #f4f7f5;
+  }
+
+  .search-page {
+    position: relative;
+    overflow: hidden;
+    padding: 48px;
+  }
+
+  .search-page::before,
+  .search-page::after {
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    border: 1px solid rgb(12 133 94 / 9%);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .search-page::before {
+    top: -210px;
+    left: -100px;
+    box-shadow: 0 0 0 34px rgb(12 133 94 / 3%), 0 0 0 70px rgb(12 133 94 / 2%);
+  }
+
+  .search-page::after {
+    right: -220px;
+    bottom: -250px;
+    width: 520px;
+    height: 520px;
+    box-shadow: 0 0 0 45px rgb(12 133 94 / 3%), 0 0 0 95px rgb(12 133 94 / 2%);
+  }
+
+  .details-page {
+    height: calc(100dvh - 58px);
+    padding: 22px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(400px, .85fr);
+    gap: 22px;
+    overflow: hidden;
+  }
+
+  .map-panel {
+    position: relative;
+    inset: auto;
+    height: 100%;
+    min-height: 0;
+    border: 1px solid #e3ebe7;
+    border-radius: 22px;
+    box-shadow: 0 12px 36px rgb(29 55 44 / 9%);
+  }
+
+  .bottom-sheet,
+  .bottom-sheet.navigation-active,
+  .bottom-sheet.expanded {
+    position: relative;
+    inset: auto;
+    height: 100%;
+    max-height: 100%;
+    box-sizing: border-box;
+    padding: 10px 20px 20px;
+    border: 1px solid #e5ece8;
+    border-radius: 22px;
+    box-shadow: 0 12px 36px rgb(29 55 44 / 7%);
+    background: #fdfefd;
+  }
+
+  .sheet-handle-area {
+    display: none;
+  }
+
+  .map-caption {
+    margin: 0 0 14px;
+    text-align: left;
+    font-size: 11px;
+  }
+
+  .work-summary,
+  .orders {
+    margin: 0 0 18px;
+  }
+
+  .delivery-heading h2 {
+    font-size: 16px;
+  }
+
+  .summary-panel {
+    padding: 14px;
+    border: 1px solid #e6eee9;
+    background: #f2f7f4;
+  }
+
+  .summary-grid {
+    gap: 8px;
+  }
+
+  .summary-tile {
+    min-height: 60px;
+    padding: 9px;
+  }
+
+  .summary-tile small {
+    font-size: 10px;
+  }
+
+  .summary-tile strong {
+    font-size: 14px;
+  }
+
+  .sequence-summary {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .orders {
+    overflow: auto;
+    padding-right: 4px;
+    scrollbar-color: #cbd9d1 transparent;
+    scrollbar-width: thin;
+  }
+
+  .orders-heading h2 {
+    font-size: 14px;
+  }
+
+  .order-card {
+    margin: 8px 0 10px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .stop-title strong {
+    font-size: 14px;
+  }
+
+  .stop-title small,
+  .orders-heading small {
+    font-size: 10px;
+  }
+
+  .stop-address {
+    font-size: 13px;
+  }
+
+  .stop-meta {
+    font-size: 11px;
+  }
+
+  .secondary-button {
+    padding: 12px;
+    cursor: pointer;
+  }
+
+  .start-button {
+    width: 100%;
+    margin: 0;
+    flex: 0 0 auto;
+    cursor: pointer;
+  }
+
+  .bottom-sheet {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .route-banner {
+    top: 18px;
+    right: 18px;
+    left: 18px;
+    max-width: 480px;
+  }
+}
+
+@media (max-width: 899px) {
+  .rider-page {
+    width: min(100%, 520px);
+  }
+
+  .bottom-sheet {
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-card {
+    padding: 28px 24px;
+  }
+
+  .search-page h1 {
+    font-size: 26px;
+  }
 }
 
 
