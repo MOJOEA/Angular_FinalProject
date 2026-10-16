@@ -1,29 +1,33 @@
 <main class="rider-page">
     @if (!selectedWork() && !restoringSavedWork()) {
     <section class="search-page">
-        <h1>ระบบจัดส่งอาหาร</h1>
-        <p>กรอก ID ใบงานเพื่อดูรายละเอียดการจัดส่ง</p>
+        <div class="search-card">
+            <div class="brand-mark" aria-hidden="true">ส่ง</div>
+            <span class="eyebrow">RIDER PORTAL</span>
+            <h1>พร้อมออกไปส่ง<br>ออเดอร์ของคุณหรือยัง?</h1>
+            <p class="search-description">กรอกรหัสใบงานเพื่อเปิดเส้นทางและดูรายละเอียดการจัดส่งทั้งหมด</p>
 
-        <label for="workId">ID ใบงาน</label>
-        <input id="workId" type="text" inputmode="numeric" pattern="[0-9]*" [(ngModel)]="workId" placeholder="เช่น 1" (keyup.enter)="searchWork()" />
+            <label for="workId">รหัสใบงาน</label>
+            <input id="workId" type="text" inputmode="numeric" pattern="[0-9]*" [(ngModel)]="workId" placeholder="เช่น 1001" (keyup.enter)="searchWork()" />
 
-        @if (loading()) {
-        <p class="info">กำลังโหลดใบงาน…</p>
-        }
+            @if (loading()) {
+            <p class="info">กำลังโหลดใบงาน…</p>
+            }
 
-        @if (notice()) {
-        <p class="info">{{ notice() }}</p>
-        }
+            @if (notice()) {
+            <p class="info">{{ notice() }}</p>
+            }
 
-        @if (errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
-        }
+            @if (errorMessage()) {
+            <p class="error">{{ errorMessage() }}</p>
+            }
 
-        <button class="primary-button" type="button" (click)="searchWork()" [disabled]="loading()">
-            ค้นหาใบงาน
-        </button>
-
-        
+            <button class="primary-button" type="button" (click)="searchWork()" [disabled]="loading()">
+                {{ loading() ? 'กำลังค้นหา…' : 'ค้นหาใบงาน' }}
+                <span aria-hidden="true">→</span>
+            </button>
+            <div class="secure-note"><span aria-hidden="true">●</span> ระบบสำหรับพนักงานจัดส่ง</div>
+        </div>
     </section>
     } @else {
     @if (selectedWork(); as work) {
@@ -142,6 +146,5 @@
         }
         }
 </main>
-
 
 
