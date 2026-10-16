@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, lastValueFrom } from 'rxjs';
 import { Api } from '../../app/config/api';
 import { WorkJob } from '../../Model/work';
 
@@ -22,5 +22,17 @@ export class WorkService {
 
   public getWork(id: number): Observable<{ success: boolean; data: WorkJob }> {
     return this.http.get<{ success: boolean; data: WorkJob }>(`${this.apiEndpoint}/api/work/${id}`);
+  }
+
+  // PUT api/work/accept/:id
+  public async acceptWork(id: number): Promise<{ success: boolean; message: string }> {
+    const url = `${this.apiEndpoint}/api/work/accept/${id}`;
+    return await lastValueFrom(this.http.put<{ success: boolean; message: string }>(url, {}));
+  }
+
+  // PUT api/work/logout/:id
+  public async logoutWork(id: number): Promise<void> {
+    const url = `${this.apiEndpoint}/api/work/logout/${id}`;
+    await lastValueFrom(this.http.put<void>(url, {}));
   }
 }

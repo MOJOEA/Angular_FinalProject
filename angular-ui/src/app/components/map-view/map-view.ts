@@ -1,5 +1,6 @@
 import { Component, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
+import { Coordinate } from '../../../Model/coordinate';
 import { WorkJob } from '../../../Model/work';
 
 const MAP_CONFIG = {
@@ -97,7 +98,80 @@ export class MapViewComponent implements AfterViewInit {
     return polyline;
   }
 
-  // ฟังก์ชัน: ลบเส้นทางและ Marker ทั้งหมดออกจากแผนที่
+  // ตำแหน่งจำลอง -> จุดแรกเป็นเส้นทึบ และช่วงไปจุดถัดไปเป็นเส้นประ
+  public drawNavigationRoutes(
+    currentPosition: Coordinate,
+    activeWork: WorkJob,
+    upcomingWork?: WorkJob,
+  ): void {
+    if (!this.map) return;
+    this.clearRoutes();
+    const routeGroup = L.featureGroup();
+
+    const activeStop = activeWork.stops[0];
+    // วาดเส้นของจุดปัจจุบันแยกจากหมุด เพื่อจัดลำดับหมุดให้อยู่เหนือ marker ตำแหน่งไรเดอร์
+    const activeLine = this.drawRoutes({ ...activeWork, stops: [] });
+    if (activeLine) routeGroup.addLayer(activeLine);
+
+    const currentIcon = L.divIcon({
+      html: '<div style="width:34px;height:34px;border:4px solid #fff;border-radius:50%;background:#07865f;color:#fff;display:grid;place-items:center;font-size:17px;box-shadow:0 2px 8px #0006">▲</div>',
+      className: '',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+    });
+    const currentMarker = L.marker(
+      [currentPosition.latitude, currentPosition.longitude],
+      { icon: currentIcon, zIndexOffset: -1000 },
+    ).bindPopup('ตำแหน่งจำลองของไรเดอร์').addTo(this.map);
+    this.stopMarkers.push(currentMarker);
+
+    if (activeStop) {
+      const activeIcon = L.divIcon({
+        html: `<div style="width:32px;height:32px;border:3px solid #fff;border-radius:50%;background:${activeWork.color || '#07865f'};color:#fff;display:grid;place-items:center;font-weight:bold;box-shadow:0 2px 6px #0005">${activeStop.sequence_no}</div>`,
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      const activeMarker = L.marker([activeStop.latitude, activeStop.longitude], {
+        icon: activeIcon,
+        zIndexOffset: 1000,
+      }).bindPopup(`จุดส่งปัจจุบัน: ${activeStop.customer_name}`).addTo(this.map);
+      this.stopMarkers.push(activeMarker);
+    }
+
+    const nextWork = upcomingWork;
+    const upcomingCoordinates = nextWork?.geometry?.coordinates;
+    if (nextWork && upcomingCoordinates?.length) {
+      const correctedCoords = upcomingCoordinates.map(
+        (coord: [number, number]) => [coord[1], coord[0]] as L.LatLngExpression,
+      );
+      const dashedLine = L.polyline(correctedCoords, {
+        color: nextWork.color || '#07865f',
+        weight: MAP_CONFIG.lineWidth,
+        opacity: 0.7,
+        dashArray: '8 10',
+      }).addTo(this.map);
+      this.routePolylines.push(dashedLine);
+      routeGroup.addLayer(dashedLine);
+
+      for (const nextStop of nextWork.stops) {
+        const nextIcon = L.divIcon({
+          html: `<div style="width:28px;height:28px;border:3px solid #fff;border-radius:50%;background:${nextWork.color || '#07865f'};color:#fff;display:grid;place-items:center;font-weight:bold;box-shadow:0 2px 6px #0005">${nextStop.sequence_no}</div>`,
+          className: '',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+        const nextMarker = L.marker([nextStop.latitude, nextStop.longitude], {
+          icon: nextIcon,
+          zIndexOffset: 900,
+        }).bindPopup(`จุดส่งถัดไป: ${nextStop.customer_name}`).addTo(this.map);
+        this.stopMarkers.push(nextMarker);
+      }
+    }
+
+    this.ZoomToFitRoutes(routeGroup);
+  }
+// ลบเส้นทางทั้งหมดออกจากแผนที่และล้างค่าตัวแปรเก็บเส้นทาง
   public clearRoutes(): void {
     if (this.map) {
       for (let i = 0; i < this.routePolylines.length; i++) this.map.removeLayer(this.routePolylines[i]);
@@ -116,3 +190,4 @@ export class MapViewComponent implements AfterViewInit {
     }
   }
 }
+
