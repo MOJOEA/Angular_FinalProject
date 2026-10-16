@@ -91,7 +91,7 @@ export class Rider implements OnInit {
 
     try {
       const response = await this.workService.getWork(id);
-      let work: WorkJob | null = response?.data ?? response?.work ?? null;
+      let work: WorkJob | null = response?.data ?? null;
 
       if (response?.success === false || !work || Number(work.work_id) !== id) {
         localStorage.clear();

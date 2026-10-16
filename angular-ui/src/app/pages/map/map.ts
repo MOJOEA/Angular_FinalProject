@@ -93,15 +93,16 @@ export class Map implements OnInit {
     }
   }
 
-  // ฟังก์ชัน: โหลดใบงานทั้งหมดจากระบบ
+    // ฟังก์ชัน: โหลดใบงานทั้งหมดจากระบบ
   async loadWorkOrders(): Promise<void> {
-    await this.fetchAndProcessWork(() => firstValueFrom(this.workService.getAllWork()));
+    await this.fetchAndProcessWork(() => this.workService.getAllWork());
   }
 
   // ฟังก์ชัน: สร้างใบงานและแสดงเส้นทาง
   async generateWorkOrders(): Promise<void> {
-    await this.fetchAndProcessWork(() => firstValueFrom(this.workService.getWorkCreat()));
+    await this.fetchAndProcessWork(() => this.workService.getWorkCreat());
   }
+
 
   // ฟังก์ชัน: เลือกใบงานและแสดงเส้นทางเฉพาะรายการ
   selectOrderOnMap(job_code: string): void {

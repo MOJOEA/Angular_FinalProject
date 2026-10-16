@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, lastValueFrom } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 import { Api } from '../../app/config/api';
 import { WorkJob } from '../../Model/work';
 
@@ -12,16 +12,22 @@ export class WorkService {
   api = inject(Api);
   apiEndpoint = this.api.API_ENDPOINT_BACKING;
 
-  public getAllWork(): Observable<{ success: boolean; data: WorkJob[] }> {
-    return this.http.get<{ success: boolean; data: WorkJob[] }>(`${this.apiEndpoint}/api/work`);
+  // GET api/work
+  public async getAllWork(): Promise<{ success: boolean; data: WorkJob[] }> {
+    const url = `${this.apiEndpoint}/api/work`;
+    return await lastValueFrom(this.http.get<{ success: boolean; data: WorkJob[] }>(url));
   }
 
-  public getWorkCreat(): Observable<{ success: boolean; data: WorkJob[] }> {
-    return this.http.get<{ success: boolean; data: WorkJob[] }>(`${this.apiEndpoint}/api/work/creat`);
+  // GET api/work/creat
+  public async getWorkCreat(): Promise<{ success: boolean; data: WorkJob[] }> {
+    const url = `${this.apiEndpoint}/api/work/creat`;
+    return await lastValueFrom(this.http.get<{ success: boolean; data: WorkJob[] }>(url));
   }
 
-  public getWork(id: number): Observable<{ success: boolean; data: WorkJob }> {
-    return this.http.get<{ success: boolean; data: WorkJob }>(`${this.apiEndpoint}/api/work/${id}`);
+  // GET api/work/:id
+  public async getWork(id: number): Promise<{ success: boolean; data: WorkJob }> {
+    const url = `${this.apiEndpoint}/api/work/${id}`;
+    return await lastValueFrom(this.http.get<{ success: boolean; data: WorkJob }>(url));
   }
 
   // PUT api/work/accept/:id
