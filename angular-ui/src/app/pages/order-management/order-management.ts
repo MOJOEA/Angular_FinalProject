@@ -157,7 +157,7 @@ export class OrderManagement implements OnInit {
       this.closeDialog();
       await this.loadOrders();
     } catch (error: unknown) {
-      this.formError = 'บันทึกออเดอร์ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ API';
+      this.formError = 'บันทึกออเดอร์ไม่สำเร็จ';
       console.error('บันทึกออเดอร์ผ่าน API ไม่สำเร็จ', error);
     } finally {
       this.saving = false;

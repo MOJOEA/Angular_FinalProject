@@ -1,9 +1,17 @@
 .map-layout-wrapper {
-  display: block;             
-  position: fixed;            
-  top: 60px;                  
+  display: block;
+  position: fixed;
+  top: 60px;
   left: 0;
-  width: 76%;                 
-  height: calc(100vh - 60px); 
+  width: calc(100% - 400px);
+  height: calc(100dvh - 60px);
   z-index: 1;
+}
+
+@media (max-width: 767px) {
+  .map-layout-wrapper {
+    top: 60px;
+    width: 100%;
+    height: calc(45dvh - 60px);
+  }
 }
