@@ -52,58 +52,55 @@ export class RoutesAMapService {
   }
 
   // ฟังก์ชัน: คำนวณเส้นทางหลายใบงานพร้อมจำกัดจำนวนคำขอและใช้ผลลัพธ์ซ้ำ
-  public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
-    if (!works || works.length === 0) return [];
-    const cacheMap = new Map<string, Promise<WorkJob>>();
-    const results: WorkJob[] = [];
-    const pendingWorks: WorkJob[] = [];
+  private cacheMap = new Map<string, any>(); 
 
-    for (const work of works) {
-      if (!work.stops || work.stops.length === 0) {
-        results.push({ ...work, geometry: null, distance_raw: 0, duration_raw: 0, distance_km: 0, duration_min: 0 });
-      } else {
-        const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
-        if (cacheMap.has(cacheKey)) {
-          results.push({ ...work, _cacheKey: cacheKey } as any);
-        } else {
-          pendingWorks.push(work);
-          results.push(work);
-        }
-      }
+public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
+  if (!works || works.length === 0) return [];
+  
+  const results: WorkJob[] = [];
+  const pendingRequests: { work: WorkJob; cacheKey: string }[] = [];
+
+  for (const work of works) {
+    if (!work.stops || work.stops.length === 0) {
+      results.push({ ...work, geometry: null, distance_raw: 0, duration_raw: 0, distance_km: 0, duration_min: 0 });
+      continue;
     }
 
-    if (pendingWorks.length > 0) {
-      const CONCURRENT_LIMIT = 6;
-      const uniqueResults = await lastValueFrom(
-        from(pendingWorks).pipe(
-          mergeMap(work => this.getRouteForSingleWork(work), CONCURRENT_LIMIT),
-          toArray()
-        )
-      );
-      for (let i = 0; i < pendingWorks.length; i++) {
-        const originalWork = pendingWorks[i];
-        const cacheKey = originalWork.stops!.map(s => `${s.latitude},${s.longitude}`).join('|');
-        cacheMap.set(cacheKey, Promise.resolve(uniqueResults[i]));
-      }
+    const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
+    
+    if (this.cacheMap.has(cacheKey)) {
+      const cached = this.cacheMap.get(cacheKey);
+      results.push({ ...work, ...cached });
+    } else {
+      pendingRequests.push({ work, cacheKey });
+      results.push(work);
     }
-
-    return Promise.all(results.map(async (work: any) => {
-      if (work._cacheKey) {
-        const cachedData = await cacheMap.get(work._cacheKey);
-        return {
-          ...work,
-          geometry: cachedData?.geometry,
-          distance_raw: cachedData?.distance_raw,
-          duration_raw: cachedData?.duration_raw,
-          distance_km: cachedData?.distance_km,
-          duration_min: cachedData?.duration_min
-        };
-      }
-      if (work.stops && work.stops.length > 0) {
-        const cacheKey = work.stops.map((s: any) => `${s.latitude},${s.longitude}`).join('|');
-        return cacheMap.get(cacheKey) || work;
-      }
-      return work;
-    }));
   }
-}
+  if (pendingRequests.length > 0) {
+    const CONCURRENT_LIMIT = 6;
+
+    for (let i = 0; i < pendingRequests.length; i += CONCURRENT_LIMIT) {
+      const chunk = pendingRequests.slice(i, i + CONCURRENT_LIMIT);
+      
+      await Promise.all(chunk.map(async (req) => {
+        const updatedWork = await this.getRouteForSingleWork(req.work);
+        const routeData = {
+          geometry: updatedWork.geometry,
+          distance_raw: updatedWork.distance_raw,
+          duration_raw: updatedWork.duration_raw,
+          distance_km: updatedWork.distance_km,
+          duration_min: updatedWork.duration_min
+        }; 
+        this.cacheMap.set(req.cacheKey, routeData);
+      }));
+    }
+    return works.map(work => {
+      if (!work.stops || work.stops.length === 0) return work;
+      const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
+      const cachedData = this.cacheMap.get(cacheKey);
+      return cachedData ? { ...work, ...cachedData } : work;
+    });
+  }
+
+  return results;
+}}
