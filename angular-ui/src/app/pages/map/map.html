@@ -14,19 +14,14 @@
               <i class="fa-solid fa-route text-[#719c42]"></i>
               <span class="text-xs text-slate-500">ใบงานไรเดอร์</span>
             </div>
-            <p class="text-xl font-bold text-[#45652d]">{{ (workOrders().flatMap(order => order.stops || []).length / 3) | number:'1.0-0' }}
-
-
- งาน</p>
+            <p class="text-xl font-bold text-[#45652d]">{{ (workOrders().flatMap(order => order.stops || []).length / 3) | number:'1.0-0' }}งาน</p>
           </div>
           <div class="p-3 rounded-xl border border-[#e2ebd8] bg-[#f7faf3]">
             <div class="flex items-center gap-2 mb-2">
               <i class="fa-solid fa-box text-[#719c42]"></i>
               <span class="text-xs text-slate-500">ออเดอร์ทั้งหมด</span>
             </div>
-            <p class="text-xl font-bold text-[#45652d]">{{ (workOrders().flatMap(order => order.stops || []).length) | number:'1.0-0' }}
-
- รายการ</p>
+            <p class="text-xl font-bold text-[#45652d]">{{ (workOrders().flatMap(order => order.stops || []).length) | number:'1.0-0' }}รายการ</p>
           </div>
         </div>
       </section>

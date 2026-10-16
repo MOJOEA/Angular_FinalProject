@@ -60,7 +60,6 @@ public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
   const results: WorkJob[] = [];
   const pendingRequests: { work: WorkJob; cacheKey: string }[] = [];
 
-  // รอบที่ 1: คัดกรองและจับคู่ข้อมูล
   for (const work of works) {
     if (!work.stops || work.stops.length === 0) {
       results.push({ ...work, geometry: null, distance_raw: 0, duration_raw: 0, distance_km: 0, duration_min: 0 });
@@ -70,43 +69,31 @@ public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
     const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
     
     if (this.cacheMap.has(cacheKey)) {
-      // มี Cache แล้ว ดึงข้อมูลมาใส่ได้เลยทันที ป้องกันข้อมูลมั่ว
       const cached = this.cacheMap.get(cacheKey);
       results.push({ ...work, ...cached });
     } else {
-      // ยังไม่มี ให้เก็บคีย์ไว้เตรียมยิง API
       pendingRequests.push({ work, cacheKey });
-      results.push(work); // ใส่ไว้เป็น Reference ชั่วคราว
+      results.push(work);
     }
   }
-
-  // รอบที่ 2: ยิงคำนวณเฉพาะตัวที่ไม่ซ้ำ (ควบคุม Concurrency = 6)
   if (pendingRequests.length > 0) {
     const CONCURRENT_LIMIT = 6;
-    
-    // แบ่งกลุ่มยิงทีละ 6Requests ปลอดภัยกว่า RxJS mergeMap ในกรณีนี้
+
     for (let i = 0; i < pendingRequests.length; i += CONCURRENT_LIMIT) {
       const chunk = pendingRequests.slice(i, i + CONCURRENT_LIMIT);
       
       await Promise.all(chunk.map(async (req) => {
-        // ยิงคำนวณจริง
         const updatedWork = await this.getRouteForSingleWork(req.work);
-        
-        // แยกเก็บข้อมูลเส้นทางลง Cache
         const routeData = {
           geometry: updatedWork.geometry,
           distance_raw: updatedWork.distance_raw,
           duration_raw: updatedWork.duration_raw,
           distance_km: updatedWork.distance_km,
           duration_min: updatedWork.duration_min
-        };
-        
-        // บันทึกลงตัวแปรระดับ Class
+        }; 
         this.cacheMap.set(req.cacheKey, routeData);
       }));
     }
-
-    // รอบที่ 3: แมปผลลัพธ์กลับคืนอาร์เรย์หลักให้ถูกต้องตามตำแหน่งเดิม
     return works.map(work => {
       if (!work.stops || work.stops.length === 0) return work;
       const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
