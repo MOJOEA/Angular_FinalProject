@@ -8,7 +8,9 @@ import { SettingService } from '../../../service/api/setting';
 
 import { WorkJob } from '../../../Model/work';
 import { SystemSetting } from '../../../Model/setting';
+
 import { MapViewComponent } from '../../components/map-view/map-view';
+
 import { calculateJobProfit, ProfitSummary } from '../../../Util/delivery-calculator';
 
 @Component({
@@ -132,8 +134,10 @@ export class Map implements OnInit {
     this.mapView()?.clearRoutes();
   }
 
-  saveWorkOrders(): void {
-    if (this.workOrders().length === 0) return;
-    console.log('บันทึกข้อมูล Work Orders ปัจจุบัน:', this.workOrders());
-  }
+  logWorkOrder(workOrder: any) {
+  console.log('WorkOrder:', workOrder);
+  console.log('Stops:', workOrder.stops);
+  console.log('Stops length:', workOrder.stops?.length);
+  return !!workOrder.stops?.length;
+}
 }

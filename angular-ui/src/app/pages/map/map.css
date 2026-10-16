@@ -1,4 +1,9 @@
-#map-container {
-  height: 500px;  /* สามารถปรับความสูงได้ตามต้องการ */
-  width: 65%;
+.map-layout-wrapper {
+  display: block;             
+  position: fixed;            
+  top: 60px;                  
+  left: 0;
+  width: 76%;                 
+  height: calc(100vh - 60px); 
+  z-index: 1;
 }
