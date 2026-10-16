@@ -1,6 +1,7 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common'; // เพิ่มสำหรับใช้ | number ใน Template (ถ้าเป็น Standalone)
 import { firstValueFrom } from 'rxjs';
+import { Component, OnInit, signal, viewChild } from '@angular/core';
 
 import { WorkService } from '../../../service/api/work'; 
 import { RoutesAMapService } from '../../../service/api/routesamap'; 
@@ -85,16 +86,16 @@ export class Map implements OnInit {
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลการตั้งค่า:', error);
     }
+    this.loadWorkOrders();
   }
 
-  // ดึงข้อมูลใบงาน พ่วงพิกัดเส้นทางจาก API และส่งไปวาดบนแผนที่ทั้งหมด
-  async generateWorkOrders(): Promise<void> {
+  private async fetchAndProcessWork(fetchApi: () => Promise<any>): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
     this.errorMessage.set('');
     
     try {
-      const res = await firstValueFrom(this.workService.getAll());
+      const res = await fetchApi();
       const mockWorks: WorkJob[] = res?.data || [];
 
       if (mockWorks.length === 0) {
@@ -115,6 +116,15 @@ export class Map implements OnInit {
     }
   }
   
+
+  async loadWorkOrders(): Promise<void>{
+    await this.fetchAndProcessWork(() => this.workService.getAllWork());
+  }
+
+  // ดึงข้อมูลใบงาน พ่วงพิกัดเส้นทางจาก API และส่งไปวาดบนแผนที่ทั้งหมด
+  async generateWorkOrders(): Promise<void> {
+    await this.fetchAndProcessWork(() => this.workService.getWorkCreat());
+  }
 
   // ค้นหาและแสดงเส้นทางบนแผนที่เฉพาะใบงานเดี่ยวที่เลือก
   selectOrderOnMap(job_code: string): void {

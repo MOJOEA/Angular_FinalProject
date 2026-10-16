@@ -7,4 +7,10 @@ export const routes: Routes = [
     },{
         path: 'map', component: Map
     }
+import { CustomerManagement } from './pages/customer-management/customer-management';
+
+export const routes: Routes = [
+  { path: '', component: Main },
+  { path: 'customer', component: CustomerManagement },
+  { path: 'map', component: Map },
 ];

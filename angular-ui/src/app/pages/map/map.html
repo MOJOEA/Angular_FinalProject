@@ -202,6 +202,41 @@
                   <!-- แสดงค่าเวลาจากใบงาน -->
                   {{ workOrder.duration || '0 mins' }}
                 </span>
+              <!-- รายการจุดจอดและลำดับการส่งของลูกค้าภายในใบงาน -->
+              <div class="space-y-2 text-sm">
+                <div>
+                  <span class="block text-xs text-slate-400 mb-1">ลำดับการจัดส่ง</span>
+                  <div class="space-y-1 bg-white p-2.5 rounded-lg border border-slate-100">
+                    @for (stop of workOrder.stops; track stop.stop_id) {
+                      <div class="text-xs text-slate-600 flex justify-between items-center gap-1">
+                        <div class="truncate max-w-[220px]">
+                          <span class="font-semibold text-slate-800">{{ stop.sequence_no }}.</span> 
+                          {{ stop.customer_name }} 
+                          <span class="text-slate-400">({{ stop.location_name }})</span>
+                        </div>
+                        <span class="text-slate-400 flex-none">[{{ stop.box_count }} กล่อง]</span>
+                      </div>
+                      @if (stop.order_note) {
+                        <p class="text-[11px] text-orange-500 pl-4 italic mb-1">
+                          * หมายเหตุ: {{ stop.order_note }}
+                        </p>
+                      }
+                    }
+                  </div>
+                </div>
+
+                <div class="flex justify-between pt-2 border-t border-slate-200 text-xs">
+                  <span class="text-slate-400">Distance (OSRM)</span>
+                  <span class="font-medium text-slate-700">
+                    {{ workOrder.distance_km === undefined ? 'Error' : (workOrder.distance_km.toFixed(2) + ' km') }}
+                  </span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-slate-400">Duration (OSRM)</span>
+                  <span class="font-medium text-slate-700">
+                    {{ workOrder.duration_min === undefined ? 'Error' : (workOrder.duration_min.toFixed(0) + ' mins') }}
+                  </span>
+                </div>
               </div>
             </div>
 
