@@ -37,9 +37,9 @@ export class WorkService {
   }
 
   // PUT api/work/accept/:id
-  public async acceptWork(id: number): Promise<void> {
+  public async acceptWork(id: number): Promise<{ success: boolean; message: string }> {
     const url = `${this.apiEndpoint}/api/work/accept/${id}`;
-    await lastValueFrom(this.http.put<void>(url, {}));
+    return await lastValueFrom(this.http.put<{ success: boolean; message: string }>(url, {}));
   }
 
   // PUT api/work/logout/:id

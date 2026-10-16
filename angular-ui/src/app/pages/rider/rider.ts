@@ -8,6 +8,7 @@ import { RoutesAMapService } from '../../../service/api/routesamap';
 import { MapViewComponent } from '../../components/map-view/map-view';
 
 const DEMO_CURRENT_POSITION: Coordinate = { latitude: 16.245842, longitude: 103.251458 };
+const RIDER_WORK_STORAGE_KEY = 'rider_work_id';
 
 @Component({
   selector: 'app-rider',
@@ -16,17 +17,33 @@ const DEMO_CURRENT_POSITION: Coordinate = { latitude: 16.245842, longitude: 103.
   templateUrl: './rider.html',
   styleUrl: './rider.css',
 })
-export class Rider {
+export class Rider implements OnInit {
   readonly mapView = viewChild<MapViewComponent>('mapView');
 
   workId = '';
   readonly selectedWork = signal<WorkJob | null>(null);
   readonly loading = signal(false);
+  readonly restoringSavedWork = signal(false);
   readonly notice = signal('');
   readonly errorMessage = signal('');
   readonly navigationInfo = signal<{ instruction: string; distance: string; accuracy: number } | null>(null);
 
   constructor(private readonly workService: WorkService, private readonly routesAMapService: RoutesAMapService) {}
+
+  async ngOnInit(): Promise<void> {
+    const savedId = localStorage.getItem(RIDER_WORK_STORAGE_KEY);
+    if (!savedId) return;
+
+    const id = Number(savedId);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      localStorage.clear();
+      return;
+    }
+
+    this.workId = savedId;
+    this.restoringSavedWork.set(true);
+    await this.loadWorkById(id, true);
+  }
 
   async searchWork(): Promise<void> {
     const id = Number(String(this.workId ?? '').trim());
@@ -36,7 +53,35 @@ export class Rider {
       return;
     }
 
-    await this.loadWorkById(id, false);
+    this.loading.set(true);
+    this.errorMessage.set('');
+
+    try {
+      const response = await this.workService.acceptWork(id);
+      if (!response?.success || response.message !== 'Status updated to shipping') {
+        this.errorMessage.set(
+          response?.message === 'Already in shipping'
+            ? 'ใบงานนี้กำลังจัดส่งอยู่แล้ว'
+            : response?.message === 'Work not found'
+              ? 'ไม่พบใบงานนี้'
+              : 'รับใบงานไม่สำเร็จ ลองใหม่อีกครั้ง',
+        );
+        return;
+      }
+
+      localStorage.setItem(RIDER_WORK_STORAGE_KEY, String(id));
+      await this.loadWorkById(id, false);
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      this.errorMessage.set(
+        status === 404
+          ? 'ไม่พบใบงานนี้'
+          : 'รับใบงานไม่สำเร็จ ตรวจสอบการเชื่อมต่อ Backend แล้วลองใหม่',
+      );
+      console.error('รับใบงานไม่สำเร็จ:', error);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   private async loadWorkById(id: number, restoring: boolean): Promise<void> {
@@ -49,29 +94,18 @@ export class Rider {
       let work: WorkJob | null = response?.data ?? response?.work ?? null;
 
       if (response?.success === false || !work || Number(work.work_id) !== id) {
-        if (restoring) {
-          this.workId = "";
-        }
+        localStorage.clear();
+        this.workId = '';
         this.selectedWork.set(null);
         this.errorMessage.set("ไม่พบใบงานนี้");
         return;
       }
 
-      if (work.status === "shipping") {
-        if (!restoring) {
-          this.selectedWork.set(null);
-          this.errorMessage.set("ใบงานนี้ไม่ว่าง กำลังจัดส่งอยู่");
-          return;
-        }
-      } else if (work.status === "pending") {
-        await this.workService.acceptWork(id);
-        work.status = "shipping";
-      } else {
-        if (restoring) {
-          this.workId = "";
-        }
+      if (work.status !== 'shipping') {
+        localStorage.clear();
+        this.workId = '';
         this.selectedWork.set(null);
-        this.errorMessage.set("ใบงานนี้ไม่พร้อมให้จัดส่ง");
+        this.errorMessage.set('สถานะใบงานไม่ใช่กำลังจัดส่ง กรุณากรอก ID ใบงานใหม่');
         return;
       }
       // Add OSRM geometry so navigation can draw the road route.
@@ -81,12 +115,11 @@ export class Rider {
       this.errorMessage.set("");
     } catch (error) {
       const status = (error as { status?: number })?.status;
+      localStorage.clear();
+      this.workId = '';
       this.selectedWork.set(null);
 
-      if (restoring && status === 404) {
-        this.workId = "";
-        this.errorMessage.set("");
-      } else if (status === 404) {
+      if (status === 404) {
         this.errorMessage.set("ไม่พบใบงานนี้");
       } else if (status === 409) {
         this.errorMessage.set("ใบงานนี้ไม่ว่าง กำลังจัดส่งอยู่");
@@ -97,6 +130,7 @@ export class Rider {
       console.error("โหลดหรือรับใบงานไม่สำเร็จ:", error);
     } finally {
       this.loading.set(false);
+      this.restoringSavedWork.set(false);
     }
   }
 
@@ -215,9 +249,23 @@ export class Rider {
     const work = this.selectedWork();
     if (!work) return;
 
+    const savedId = localStorage.getItem(RIDER_WORK_STORAGE_KEY);
+    const id = Number(savedId);
+    if (!savedId || !Number.isSafeInteger(id) || id < 1) {
+      localStorage.clear();
+      this.workId = '';
+      this.navigationInfo.set(null);
+      this.mapView()?.clearRoutes();
+      this.selectedWork.set(null);
+      this.errorMessage.set('ไม่พบ ID ใบงานที่บันทึกไว้ กรุณากรอกใหม่');
+      return;
+    }
+
     this.loading.set(true);
+    this.errorMessage.set('');
     try {
-      await this.workService.logoutWork(work.work_id);
+      await this.workService.logoutWork(id);
+      localStorage.clear();
       this.workId = "";
       this.navigationInfo.set(null);
       this.mapView()?.clearRoutes();

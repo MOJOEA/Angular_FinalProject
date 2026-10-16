@@ -72,6 +72,10 @@
   font-size: 12px;
 }
 
+.logout-error {
+  margin: 8px 14px;
+}
+
 .info {
   font-size: 12px;
 }
@@ -95,7 +99,6 @@
   font-size: 28px;
 }
 
-.status,
 .summary-heading > span,
 .boxes {
   padding: 5px 9px;
@@ -104,6 +107,22 @@
   background: #e4f5ee;
   font-size: 10px;
   font-weight: 700;
+}
+
+.logout-button {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  color: #087a59;
+  background: #e4f5ee;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logout-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .map-panel {

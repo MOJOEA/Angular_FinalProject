@@ -1,5 +1,5 @@
 <main class="rider-page">
-    @if (!selectedWork()) {
+    @if (!selectedWork() && !restoringSavedWork()) {
     <section class="search-page">
         <h1>ระบบจัดส่งอาหาร</h1>
         <p>กรอก ID ใบงานเพื่อดูรายละเอียดการจัดส่ง</p>
@@ -30,8 +30,14 @@
     <header class="topbar">
         <button type="button" class="back-button" (click)="goBack()">‹</button>
         <strong>รายละเอียดใบงาน</strong>
-        <span class="status">{{ work.status }}</span>
+        <button class="logout-button" type="button" (click)="goBack()" [disabled]="loading()">
+            Logout
+        </button>
     </header>
+
+    @if (errorMessage()) {
+    <p class="error logout-error">{{ errorMessage() }}</p>
+    }
 
     <section class="details-page">
         <section id="rider-map" class="map-panel">
@@ -129,6 +135,10 @@
             </button>
         </section>
     </section>
+        } @else {
+        <section class="search-page">
+            <p class="info">กำลังโหลดใบงานที่บันทึกไว้…</p>
+        </section>
         }
         }
 </main>
