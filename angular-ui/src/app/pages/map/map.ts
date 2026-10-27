@@ -82,7 +82,22 @@ export class Map implements OnInit {
         this.errorMessage.set('ไม่พบข้อมูลใบงานจำลองในระบบ');
         return;
       }
-      const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
+     const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
+     const allStops = worksWithRoutes.flatMap(work => 
+     work.stops.map(s => {
+        console.log(`งานที่ ${work.work_id} - จุดส่ง ${s.location_name} - distance raw:`, s.distance);
+        return {
+          งานที่: work.work_id,
+          รหัสงาน: work.job_code,
+          จุดส่ง: s.location_name,
+          ลำดับ: s.sequence_no,
+          ระยะทางของจุดนี้: s.distance ?? "ไม่มีข้อมูล"
+        };
+      })
+    );
+
+    console.table(allStops);
+
       this.workOrders.set(worksWithRoutes);
       this.selectedJob.set(null);
       this.mapView()?.drawAllRoutes(worksWithRoutes);
