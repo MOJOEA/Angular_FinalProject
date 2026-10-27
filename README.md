@@ -1,5 +1,5 @@
 # Angular_FinalProject
-# 🚚 Rider Delivery & Profit Calculation System
+# Rider Delivery & Profit Calculation System
 
 ระบบบริหารจัดการเส้นทางจัดส่งสินค้า คำนวณค่าตอบแทนไรเดอร์ตามจำนวนกล่องคงเหลือและระยะทางย่อย วิเคราะห์กำไร-ขาดทุนราย
 
@@ -170,7 +170,7 @@ Angular_FinalProject/
 
 ---
 
-### 🛵 2. ระบบฝั่งไรเดอร์ (Rider System)
+### 2. ระบบฝั่งไรเดอร์ (Rider System)
 
 #### **หน้าจอแสดงงานของไรเดอร์ (Rider View)**
 - **ค้นหาตาม Job ID:** ไรเดอร์กรอก ID ของใบงานที่ได้รับมอบหมายเพื่อดึงข้อมูลใบงานของตนเอง
