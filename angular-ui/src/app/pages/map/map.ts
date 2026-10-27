@@ -44,27 +44,28 @@ export class Map implements OnInit {
   // ฟังก์ชัน: ดึงและแปลงการตั้งค่าจาก Backend ก่อนโหลดใบงาน
   async fetchSystemSetting(): Promise<void> {
     try {
-      const res: any = await firstValueFrom(this.settingService.get());
-      console.log('ข้อมูล Setting จาก Backend:', res);
-      if (res && res.data) {
+      const res = await this.settingService.get();
+
+      if (res?.data) {
         const rawData = res.data;
-        const formattedSetting: any = {
+        const formattedSetting: SystemSetting = {
           ...rawData,
-          price_per_box: parseFloat(rawData.box_price || 0),
-          food_cost_per_box: parseFloat(rawData.box_cost || 0),
-          base_rider_fee: parseFloat(rawData.rider_base_fee || 0),
+          box_price: Number(rawData.box_price) || 0,
+          box_cost: Number(rawData.box_cost) || 0,
           rider_base_fee: Number(rawData.rider_base_fee) || 0,
-          distance_rate_per_km: parseFloat(rawData.rider_fee_box || 5),
-          delivery_deadline_mins: rawData.deadline_time || 60
+          rider_fee_box: Number(rawData.rider_fee_box) || 0,
+          rider_speed_kmh: Number(rawData.rider_speed_kmh) || 0,
+          deadline_time: Number(rawData.deadline_time) || 60
         };
         this.systemSetting.set(formattedSetting);
-        console.log('แปลงข้อมูล Setting สำเร็จ:', formattedSetting);
       }
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลการตั้งค่า:', error);
     }
-    await this.loadWorkOrders();
-  }
+
+  await this.loadWorkOrders();
+}
+
 
   // ฟังก์ชัน: ดึงใบงาน ประมวลผลเส้นทาง และแสดงผลบนแผนที่
   private async fetchAndProcessWork(fetchApi: () => Promise<any>): Promise<void> {
