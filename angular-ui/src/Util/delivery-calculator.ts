@@ -66,7 +66,9 @@ export function calculateProfitFromValues(totalBoxes: number, distanceKm: number
   const grossProfit = totalRevenue - foodCost;
   const riderBaseFee = setting.rider_base_fee || 0;
   const riderDistanceFee = safeBoxes * (setting.rider_fee_box || 0) * safeDistance;
-  const totalRiderCost = riderBaseFee + riderDistanceFee;
+  const totalRiderCost = safeBoxes * (setting.rider_fee_box * safeDistance);
+  // const totalRiderCost = riderBaseFee + riderDistanceFee;
+
   const netProfit = totalRevenue - foodCost - totalRiderCost;
   const marginPercent = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
   return {
