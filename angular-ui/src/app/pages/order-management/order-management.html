@@ -1,0 +1,143 @@
+<main class="w-full min-h-screen bg-[#f8faf6] p-3 sm:p-5 lg:p-6 text-slate-700">
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <p class="text-[11px] font-extrabold tracking-[1.5px] text-[#719c42] mb-1">ORDER MANAGEMENT</p>
+      <h1 class="text-2xl font-extrabold text-[#365326]">จัดการออเดอร์</h1>
+      <p class="text-sm text-slate-500 mt-1">ดูรายการ สร้างออเดอร์ใหม่ และแก้ไขข้อมูลการสั่งซื้อ</p>
+    </div>
+    <button class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-[#99CC66] hover:bg-[#89bd55] text-[#29451b] text-sm font-bold transition disabled:opacity-50" type="button" (click)="openAddDialog()">
+      <span aria-hidden="true" class="text-xl leading-none">＋</span>
+      <span>สร้างออเดอร์ใหม่</span>
+    </button>
+  </header>
+
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5" aria-label="สรุปข้อมูลออเดอร์">
+    <article class="flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-[#e2ebd8] bg-white shadow-sm">
+      <span class="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-[#edf5e5] text-[#648c3d] text-2xl" aria-hidden="true">▤</span>
+      <div><span class="block text-xs text-slate-500 mb-1">ออเดอร์ทั้งหมด</span><strong class="text-2xl font-extrabold text-[#365326]">{{ orders.length }}</strong></div>
+    </article>
+    <article class="flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-[#e2ebd8] bg-white shadow-sm">
+      <span class="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-[#edf5e5] text-[#648c3d] text-2xl" aria-hidden="true">▦</span>
+      <div><span class="block text-xs text-slate-500 mb-1">จำนวนกล่องรวม</span><strong class="text-2xl font-extrabold text-[#365326]">{{ totalQuantity }}</strong></div>
+    </article>
+    <article class="flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-[#e2ebd8] bg-white shadow-sm">
+      <span class="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-[#edf5e5] text-[#648c3d] text-2xl" aria-hidden="true">♙</span>
+      <div><span class="block text-xs text-slate-500 mb-1">ลูกค้าที่สั่งซื้อ</span><strong class="text-2xl font-extrabold text-[#365326]">{{ customerCount }}</strong></div>
+    </article>
+  </section>
+
+  <form class="flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 mb-5 rounded-xl border border-[#e2ebd8] bg-white" (ngSubmit)="onSearch()">
+    <label class="flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-[#dce8ce] bg-[#fbfcf9] focus-within:border-[#99CC66]">
+      <span class="text-xl text-[#719c42]" aria-hidden="true">⌕</span>
+      <input class="w-full min-w-0 bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400" type="search" name="orderSearch" [(ngModel)]="searchQuery" (ngModelChange)="onSearch()" placeholder="ค้นหารหัสออเดอร์ ชื่อลูกค้า หรือวันที่" aria-label="ค้นหาออเดอร์" />
+    </label>
+    <span class="text-xs text-slate-500 sm:shrink-0 sm:text-right">{{ filteredOrders.length }} รายการ</span>
+  </form>
+
+  <p *ngIf="loading" class="p-3 mb-3 rounded-lg bg-[#edf5e5] text-[#55773a] text-sm" role="status">กำลังโหลดรายการออเดอร์...</p>
+  <p *ngIf="loadError" class="p-3 mb-3 rounded-lg bg-red-50 text-red-600 text-sm" role="alert">{{ loadError }}</p>
+
+  <section class="overflow-hidden rounded-2xl border border-[#e2ebd8] bg-white shadow-sm" aria-label="รายการออเดอร์">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[850px] text-left text-sm">
+        <thead class="bg-[#f1f6e9] text-[#55773a]">
+          <tr>
+            <th class="px-4 py-4 font-bold whitespace-nowrap">รหัสออเดอร์</th>
+            <th class="px-4 py-4 font-bold whitespace-nowrap">ลูกค้า</th>
+            <th class="px-4 py-4 font-bold whitespace-nowrap">วันที่สั่งซื้อ</th>
+            <th class="px-4 py-4 font-bold whitespace-nowrap">จำนวนกล่อง</th>
+            <th class="px-4 py-4 font-bold">หมายเหตุ</th>
+            <th class="px-4 py-4 font-bold whitespace-nowrap">สถานะ</th>
+            <th class="px-4 py-4 font-bold whitespace-nowrap">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#edf1e8]">
+          <tr *ngFor="let order of visibleOrders" class="cursor-pointer transition hover:bg-[#f8faf4] focus-within:bg-[#f8faf4]" tabindex="0" [attr.aria-label]="'แก้ไขออเดอร์ ' + order.order_id" (click)="openEditDialog(order)" (keydown.enter)="openEditDialog(order)" (keydown.space)="$event.preventDefault(); openEditDialog(order)">
+            <td class="px-4 py-4"><span class="font-bold text-[#55773a]">#{{ order.order_id }}</span></td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-3">
+                <span class="flex items-center justify-center w-9 h-9 shrink-0 rounded-full bg-[#eaf2df] text-[#55773a] font-bold" aria-hidden="true">{{ customerName(order.customer_id).charAt(0) }}</span>
+                <span class="flex flex-col gap-1 min-w-0">
+                  <strong class="font-semibold text-slate-700">{{ customerName(order.customer_id) }}</strong>
+                  <small class="text-xs text-slate-400">รหัสลูกค้า {{ order.customer_id }}</small>
+                </span>
+              </div>
+            </td>
+            <td class="px-4 py-4 whitespace-nowrap text-slate-500">{{ order?.created_at | date:'d MMM yyyy' }}</td>
+            <td class="px-4 py-4">
+              <span class="inline-flex px-2.5 py-1 rounded-lg bg-[#F5F4EE] text-[#4A7326] text-xs font-bold whitespace-nowrap">{{ order?.box_count }} กล่อง</span>
+            </td>
+            <td class="px-4 py-4 max-w-[200px] text-slate-500">
+              <span class="block truncate">{{ order?.order_note || '—' }}</span>
+            </td>
+            <td class="px-4 py-4">
+              <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                [ngClass]="{
+                  'bg-amber-50 text-amber-700': order?.status === 'pending',
+                  'bg-[#99CC66] text-white': order?.status === 'delivered',
+                  'bg-red-50 text-red-600': order?.status === 'cancelled',
+                  'bg-slate-100 text-slate-600': !['pending', 'delivered', 'cancelled'].includes(order?.status ?? '')
+                }">{{ statusLabel(order?.status ?? 'pending') }}</span>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-[#648c3d]">แก้ไข</span>
+                <button type="button" class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50" [disabled]="deletingOrderId !== null" [attr.aria-label]="'ลบออเดอร์ ' + order.order_id" (click)="$event.stopPropagation(); deleteOrder(order)">{{ deletingOrderId === order.order_id ? 'กำลังลบ...' : 'ลบ' }}</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && visibleOrders.length === 0">
+            <td colspan="7" class="px-4 py-12 text-center text-sm text-slate-400">ไม่พบรายการออเดอร์ที่ตรงกับคำค้นหา</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-4 border-t border-[#e2ebd8] bg-white">
+      <span class="text-xs text-slate-500">แสดง {{ filteredOrders.length ? (currentPage - 1) * pageSize + 1 : 0 }}–{{ rangeEnd }} จาก {{ filteredOrders.length }} รายการ</span>
+      <div class="flex items-center gap-1 flex-wrap">
+        <button type="button" class="flex items-center justify-center min-w-9 h-9 px-2 rounded-lg border border-[#e2ebd8] text-[#55773a] hover:bg-[#f1f6e9] disabled:opacity-40" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)" aria-label="หน้าก่อนหน้า">‹</button>
+        <button *ngFor="let page of [].constructor(totalPages); let i = index" type="button" class="flex items-center justify-center min-w-9 h-9 px-2 rounded-lg border text-sm font-semibold transition" [ngClass]="currentPage === i + 1 ? 'bg-[#99CC66] border-[#99CC66] text-[#29451b]' : 'border-[#e2ebd8] text-slate-600 hover:bg-[#f1f6e9]'" [attr.aria-current]="currentPage === i + 1 ? 'page' : null" (click)="changePage(i + 1)">{{ i + 1 }}</button>
+        <button type="button" class="flex items-center justify-center min-w-9 h-9 px-2 rounded-lg border border-[#e2ebd8] text-[#55773a] hover:bg-[#f1f6e9] disabled:opacity-40" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)" aria-label="หน้าถัดไป">›</button>
+      </div>
+    </footer>
+  </section>
+</main>
+
+<div *ngIf="dialogOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 sm:p-5" (click)="closeDialog()">
+  <section class="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl border border-[#e2ebd8] bg-white shadow-xl" role="dialog" aria-modal="true" aria-labelledby="dialog-title" (click)="$event.stopPropagation()">
+    <header class="sticky top-0 z-10 flex items-center gap-3 p-4 sm:p-5 border-b border-[#e2ebd8] bg-white">
+      <span class="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl bg-[#edf5e5] text-[#648c3d] text-2xl" aria-hidden="true">▤</span>
+      <div class="flex-1 min-w-0">
+        <h2 id="dialog-title" class="font-bold text-lg text-[#365326]">{{ editingOrderId ? 'แก้ไขออเดอร์ #' + editingOrderId : 'สร้างออเดอร์ใหม่' }}</h2>
+        <p class="text-xs text-slate-500 mt-1">กรอกรายละเอียดลูกค้า จำนวนกล่อง และหมายเหตุ</p>
+      </div>
+      <button type="button" class="flex items-center justify-center w-9 h-9 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 text-2xl" (click)="closeDialog()" aria-label="ปิด">×</button>
+    </header>
+
+    <form (ngSubmit)="saveOrder()">
+      <div class="flex flex-col gap-4 p-4 sm:p-5">
+        <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+          ลูกค้า <span class="text-red-500">*</span>
+          <select class="w-full rounded-lg border border-[#dce8ce] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[#99CC66] focus:ring-2 focus:ring-[#99CC66]/20" name="customerId" [(ngModel)]="form.customer_id" required>
+            <option [ngValue]="0" disabled>เลือกลูกค้า</option>
+            <option *ngFor="let customer of customers" [ngValue]="customer.customer_id">{{ customer.name }} ({{ customer.customer_id }})</option>
+          </select>
+        </label>
+        <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+          จำนวนกล่อง <span class="text-red-500">*</span>
+          <input class="w-full rounded-lg border border-[#dce8ce] px-3 py-3 text-sm font-normal outline-none focus:border-[#99CC66] focus:ring-2 focus:ring-[#99CC66]/20" name="boxCount" type="number" min="1" step="1" [(ngModel)]="form.box_count" required />
+        </label>
+        <label class="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+          หมายเหตุ
+          <textarea class="w-full resize-y rounded-lg border border-[#dce8ce] px-3 py-3 text-sm font-normal outline-none placeholder:text-slate-400 focus:border-[#99CC66] focus:ring-2 focus:ring-[#99CC66]/20" name="orderNote" rows="3" [(ngModel)]="form.order_note" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+        </label>
+      </div>
+      <p *ngIf="formError" class="mx-4 sm:mx-5 mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-600" role="alert">{{ formError }}</p>
+      <footer class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-4 sm:p-5 border-t border-[#e2ebd8] bg-[#fbfcf9]">
+        <button type="button" class="w-full sm:w-auto px-5 py-3 rounded-lg border border-[#dce8ce] bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50" [disabled]="saving" (click)="closeDialog()">ยกเลิก</button>
+        <button type="submit" class="w-full sm:w-auto px-5 py-3 rounded-lg bg-[#99CC66] text-[#29451b] text-sm font-bold hover:bg-[#89bd55] disabled:opacity-50" [disabled]="saving">{{ saving ? 'กำลังบันทึก...' : (editingOrderId ? 'บันทึกการแก้ไข' : 'สร้างออเดอร์') }}</button>
+      </footer>
+    </form>
+  </section>
+</div>

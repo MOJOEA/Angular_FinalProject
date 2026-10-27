@@ -1,9 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom, from } from 'rxjs';
-import { mergeMap, toArray } from 'rxjs/operators';
 import { Api } from '../../app/config/api';
-
 import { Coordinate } from '../../Model/coordinate';
 import { WorkJob } from '../../Model/work';
 
@@ -14,125 +12,105 @@ export class RoutesAMapService {
   private http = inject(HttpClient);
   private api = inject(Api);
   apiEndpoint = this.api.API_ENDPOINT_MAP;
+  private readonly depot: Coordinate = { latitude: 16.245842, longitude: 103.251458 };
 
-  private readonly depot: Coordinate = { latitude: 16.245842, longitude: 103.251458};
-
+  // ฟังก์ชัน: เรียก API เพื่อคำนวณเส้นทางจากคลังสินค้าไปยังจุดส่ง
   public getRoute(depot: Coordinate, waypoints: Coordinate[]): Promise<any> {
     let waypointsString = '';
-    const len = waypoints.length;
-    if (len > 0) {
+    if (waypoints.length > 0) {
       waypointsString += `${waypoints[0].longitude},${waypoints[0].latitude}`;
-      for (let i = 1; i < len; i++) {
+      for (let i = 1; i < waypoints.length; i++) {
         waypointsString += `;${waypoints[i].longitude},${waypoints[i].latitude}`;
       }
     }
     return lastValueFrom(this.http.get<any>(`${this.apiEndpoint}/${depot.longitude},${depot.latitude};${waypointsString}?overview=full&steps=true&geometries=geojson`));
   }
 
-  // คำนวณใบงานเดี่ยว
   public async getRouteForSingleWork(work: WorkJob): Promise<WorkJob> {
-    const stops = work.stops;
-    if (!stops || stops.length === 0) {
-      return { 
-        ...work, 
-        geometry: null, 
-        distance_raw: 0,
-        duration_raw: 0,
-        distance_km: 0,
-        duration_min: 0
-      };
-    }
+  const stops = [...(work.stops ?? [])].sort((a, b) => a.sequence_no - b.sequence_no);
 
-    try {
-      const routeResponse = await this.getRoute(this.depot, stops);
-      const primaryRoute = routeResponse?.routes?.[0];
-      const distanceMetres = primaryRoute ? primaryRoute.distance : 0;
-      const durationSeconds = primaryRoute ? primaryRoute.duration : 0;
-    
-      return {
-        ...work,
-        geometry: primaryRoute?.geometry || null,
-        distance_raw: distanceMetres,
-        duration_raw: durationSeconds,
-        distance_km: distanceMetres * 0.001,
-        duration_min: (distanceMetres * 0.12) / 60
-      };
-
-    } catch (error) {
-      return { 
-        ...work, 
-        geometry: null, 
-        distance_raw: undefined,
-        duration_raw: undefined,
-        distance_km: undefined,
-        duration_min: undefined
-      };
-    }
+  if (!stops.length) {
+    return { ...work, stops, geometry: null, distance_raw: 0, duration_raw: 0, distance_km: 0, duration_min: 0 };
   }
 
-  public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
-    if (!works || works.length === 0) return [];
-    const cacheMap = new Map<string, Promise<WorkJob>>();
-    const results: WorkJob[] = [];
-    const pendingWorks: WorkJob[] = [];
-    for (const work of works) {
-      if (!work.stops || work.stops.length === 0) {
-        results.push({
-          ...work,
-          geometry: null,
-          distance_raw: 0,
-          duration_raw: 0,
-          distance_km: 0,
-          duration_min: 0
-        });
-      } else {
-        const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
-        if (cacheMap.has(cacheKey)) {
-          results.push({ ...work, _cacheKey: cacheKey } as any);
-        } else {
-          pendingWorks.push(work);
-          results.push(work); // ใส่ไว้เป็น reference ก่อน
-        }
-      }
-    }
+  try {
+    const route = (await this.getRoute(this.depot, stops))?.routes?.[0];
+    if (!route) throw new Error('ไม่พบเส้นทางจาก OSRM');
+    const updatedStops = stops.map((stop, i) => ({
+      ...stop,
+      distance: route.legs?.[i]?.distance,
+    }));
 
-    if (pendingWorks.length > 0) {
-      const CONCURRENT_LIMIT = 6;
-      const uniqueResults = await lastValueFrom(
-        from(pendingWorks).pipe(
-          mergeMap((work) => this.getRouteForSingleWork(work), CONCURRENT_LIMIT),
-          toArray()
-        )
-      );
+    console.table(updatedStops.map(s => ({
+      จุดส่ง: s.location_name,
+      ลำดับ: s.sequence_no,
+      ระยะทางเมตร: s.distance,
+    })));
+    console.log('ระยะทางรวม:', route.distance, 'เมตร |', (route.distance / 1000).toFixed(2), 'กม.');
 
-      for (let i = 0; i < pendingWorks.length; i++) {
-        const originalWork = pendingWorks[i];
-        const cacheKey = originalWork.stops!.map(s => `${s.latitude},${s.longitude}`).join('|');
-        cacheMap.set(cacheKey, Promise.resolve(uniqueResults[i]));
-      }
-    }
-
-    const finalResults = await Promise.all(
-      results.map(async (work: any) => {
-        if (work._cacheKey) {
-          const cachedData = await cacheMap.get(work._cacheKey);
-          return {
-            ...work,
-            geometry: cachedData?.geometry,
-            distance_raw: cachedData?.distance_raw,
-            duration_raw: cachedData?.duration_raw,
-            distance_km: cachedData?.distance_km,
-            duration_min: cachedData?.duration_min
-          };
-        }
-        if (work.stops && work.stops.length > 0) {
-          const cacheKey = work.stops.map((s: any) => `${s.latitude},${s.longitude}`).join('|');
-          return cacheMap.get(cacheKey) || work;
-        }
-        return work;
-      })
-    );
-
-    return finalResults;
+    return {
+      ...work,
+      stops: updatedStops,
+      geometry: route.geometry ?? null,
+      distance_raw: route.distance,
+      duration_raw: route.duration,
+      distance_km: route.distance / 1000,
+      duration_min: route.duration / 60,
+    };
+  } catch {
+    return { ...work, geometry: null, distance_raw: undefined, duration_raw: undefined, distance_km: undefined, duration_min: undefined };
   }
 }
+  // ฟังก์ชัน: คำนวณเส้นทางหลายใบงานพร้อมจำกัดจำนวนคำขอและใช้ผลลัพธ์ซ้ำ
+  private cacheMap = new Map<string, any>(); 
+
+public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
+  if (!works || works.length === 0) return [];
+  
+  const results: WorkJob[] = [];
+  const pendingRequests: { work: WorkJob; cacheKey: string }[] = [];
+
+  for (const work of works) {
+    if (!work.stops || work.stops.length === 0) {
+      results.push({ ...work, geometry: null, distance_raw: 0, duration_raw: 0, distance_km: 0, duration_min: 0 });
+      continue;
+    }
+
+    const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
+    
+    if (this.cacheMap.has(cacheKey)) {
+      const cached = this.cacheMap.get(cacheKey);
+      results.push({ ...work, ...cached });
+    } else {
+      pendingRequests.push({ work, cacheKey });
+      results.push(work);
+    }
+  }
+  if (pendingRequests.length > 0) {
+    const CONCURRENT_LIMIT = 6;
+
+    for (let i = 0; i < pendingRequests.length; i += CONCURRENT_LIMIT) {
+      const chunk = pendingRequests.slice(i, i + CONCURRENT_LIMIT);
+      
+      await Promise.all(chunk.map(async (req) => {
+        const updatedWork = await this.getRouteForSingleWork(req.work);
+        const routeData = {
+          geometry: updatedWork.geometry,
+          distance_raw: updatedWork.distance_raw,
+          duration_raw: updatedWork.duration_raw,
+          distance_km: updatedWork.distance_km,
+          duration_min: updatedWork.duration_min
+        }; 
+        this.cacheMap.set(req.cacheKey, routeData);
+      }));
+    }
+    return works.map(work => {
+      if (!work.stops || work.stops.length === 0) return work;
+      const cacheKey = work.stops.map(s => `${s.latitude},${s.longitude}`).join('|');
+      const cachedData = this.cacheMap.get(cacheKey);
+      return cachedData ? { ...work, ...cachedData } : work;
+    });
+  }
+
+  return results;
+}}

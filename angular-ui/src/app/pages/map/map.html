@@ -1,150 +1,159 @@
-<!-- โครงสร้างหลักแบบเต็มหน้าจอพร้อมซ่อน Scrollbar แนวตั้งของบอดี้ -->
-<div class="h-screen w-screen flex overflow-hidden bg-slate-100">
-  
-  <!-- พื้นที่แสดงผลแผนที่ ยืดเต็มส่วนที่เหลือของหน้าจอ -->
-  <app-map-view #mapView class="block flex-1 h-full"></app-map-view>
+<div class="h-[100dvh] w-full flex flex-col md:flex-row overflow-hidden bg-white">
+  <app-map-view #mapView class="map-layout-wrapper min-h-0 flex-1 order-1"></app-map-view>
 
-  <!-- แถบด้านข้างฝั่งขวาสำหรับแสดงผลและจัดการข้อมูลใบงาน -->
-  <div class="w-[400px] h-full flex flex-col bg-white border-l border-slate-200">
-    
-    <!-- ส่วนหัวแสดงชื่อโมดูลและรายละเอียดเวลาจัดส่ง -->
-    <div class="px-6 py-5 border-b border-slate-200 flex-none">
-      <h2 class="text-xl font-bold text-slate-800">Work Deliverables</h2>
-      <p class="text-xs text-slate-400 mt-1">เริ่มออกส่ง 11.30 น. ต้องถึงไม่เกิน 12:30 น.</p>
+<div class="w-full md:w-[400px] md:max-w-[45vw] md:ml-auto shrink-0 h-[55dvh] md:h-full flex flex-col bg-white border-t md:border-t-0 md:border-l border-[#e2ebd8] order-2 md:order-last">    <div class="px-4 md:px-5 py-4 border-b border-[#e2ebd8] shrink-0 bg-white">
+      <h2 class="text-xl font-bold text-[#45652d]">Work Deliverables</h2>
+      <p class="text-xs text-slate-500 mt-1">เริ่มออกส่ง 11.30 น. ต้องถึงไม่เกิน 12:30 น.</p>
     </div>
-
-    <!-- ส่วนเนื้อหาหลักที่รองรับการสกอลล์เมื่อข้อมูลยาวเกินหน้าจอ -->
-    <div class="px-6 py-4 flex-1 overflow-auto">
-      
-      <!-- ส่วนแสดงการ์ดสรุปจำนวนงานและจำนวนออเดอร์ทั้งหมด -->
-      <div class="mb-6">
+    <div class="px-4 md:px-5 py-4 flex-1 min-h-0 overflow-y-auto">
+      <section class="mb-5">
         <h3 class="text-sm font-semibold text-slate-700 mb-3">สรุปภาพรวมการส่ง</h3>
         <div class="grid grid-cols-2 gap-3">
-          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+          <div class="p-3 rounded-xl border border-[#e2ebd8] bg-[#f7faF3]">
             <div class="flex items-center gap-2 mb-2">
-              <i class="fa-solid fa-route text-blue-500"></i>
-              <span class="text-xs text-slate-400">ใบงานไรเดอร์</span>
+              <i class="fa-solid fa-route text-[#719c42]"></i>
+              <span class="text-xs text-slate-500">ใบงานไรเดอร์</span>
             </div>
-            <p class="text-xl font-bold text-slate-800">{{ workOrders().length }} งาน</p>
+            <p class="text-xl font-bold text-[#45652d]">{{ (workOrders().flatMap(order => order.stops || []).length / 3) | number:'1.0-0' }} งาน</p>
           </div>
-          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+          <div class="p-3 rounded-xl border border-[#e2ebd8] bg-[#f7faf3]">
             <div class="flex items-center gap-2 mb-2">
-              <i class="fa-solid fa-box text-emerald-500"></i>
-              <span class="text-xs text-slate-400">ออเดอร์ทั้งหมด</span>
+              <i class="fa-solid fa-box text-[#719c42]"></i>
+              <span class="text-xs text-slate-500">ออเดอร์ทั้งหมด</span>
             </div>
-            <p class="text-xl font-bold text-slate-800">
-              {{ workOrders().length > 0 ? (workOrders()[0].total_orders * workOrders().length) : 0 }} รายการ
-            </p>
+            <p class="text-xl font-bold text-[#45652d]">{{ (workOrders().flatMap(order => order.stops || []).length) | number:'1.0-0' }} รายการ</p>
           </div>
         </div>
-      </div>
-
-      <!-- ส่วนแสดงรายการใบงานทั้งหมดในระบบ -->
-      <div>
-        <div class="flex items-center justify-between mb-3">
+      </section>
+      @if (selectedJobProfit(); as profit) {
+        <section class="mb-5 p-4 rounded-xl border border-[#e2ebd8] bg-white shadow-sm space-y-3">
+          <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-3 h-3 rounded-full shrink-0" [style.backgroundColor]="selectedJob()?.color"></span>
+              <span class="font-bold text-sm text-slate-800 truncate">สรุปกำไร-ขาดทุน: {{ selectedJob()?.job_code }}</span>
+            </div>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-[#f0f5e9] text-[#55773a] shrink-0">{{ selectedJob()?.status }}</span>
+          </div>
+          <div class="p-2.5 rounded-lg flex justify-between items-center gap-2 text-xs" [class]="profit.isTimeExceeded ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-[#f0f5e9] text-[#55773a] border border-[#dce8ce]'">
+            <span>เวลาจัดส่งโดยประมาณ</span>
+            <span class="font-bold text-right">
+              {{ profit.durationMins }} นาที
+              @if (profit.isTimeExceeded) {
+                <span class="text-[10px] block">(เกินกำหนด {{ profit.deadlineMins }} นาที)</span>
+              }
+            </span>
+          </div>
+          <div class="space-y-2 text-xs text-slate-600">
+            <div class="flex justify-between gap-2">
+              <span>จำนวนข้าวกล่อง</span>
+              <span class="font-semibold text-slate-800">{{ profit.totalBoxes }} กล่อง</span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span>ยอดขายรวม (65฿/กล่อง)</span>
+              <span class="font-semibold text-emerald-600">+{{ profit.totalRevenue | number:'1.2-2' }} ฿</span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span>ต้นทุนอาหาร (40฿/กล่อง)</span>
+              <span class="font-semibold text-slate-500">-{{ profit.foodCost | number:'1.2-2' }} ฿</span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span>ค่าบริการไรเดอร์ (15฿ + ระยะทาง)</span>
+              <span class="font-semibold text-orange-600">-{{ profit.totalRiderCost | number:'1.2-2' }} ฿</span>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl flex items-center justify-between gap-2" [class]="profit.isProfit ? 'bg-[#edf5e5] text-[#45652d] border border-[#d5e5c4]' : 'bg-rose-50 text-rose-900 border border-rose-200'">
+            <div>
+              <div class="text-xs font-bold">{{ profit.isProfit ? 'กำไรสุทธิ' : 'ขาดทุนสุทธิ' }}</div>
+              <div class="text-[10px] opacity-75">Margin {{ profit.marginPercent }}%</div>
+            </div>
+            <div class="text-lg font-black">{{ profit.netProfit | number:'1.2-2' }} ฿</div>
+          </div>
+          @if (!profit.isProfit) {
+            <p class="text-[11px] text-red-600 text-center">⚠️ ใบงานนี้ทำให้ร้านขาดทุน ควรปรับเปลี่ยนเส้นทางจัดส่ง</p>
+          }
+        </section>
+      }
+      <section>
+        <div class="flex items-center justify-between gap-2 mb-3">
           <h3 class="text-sm font-semibold text-slate-700">รายการใบงาน</h3>
-          <div class="flex gap-2 items-center">
+          <div class="flex gap-2 items-center shrink-0">
             @if (workOrders().length > 0) {
-              <button (click)="showAllOrdersOnMap()" class="text-xs font-semibold text-blue-600 hover:underline">
-                แสดงทุกเส้นทาง
-              </button>
+              <button (click)="showAllOrdersOnMap()" class="text-xs font-semibold text-[#648c3d] hover:text-[#45652d] hover:underline">แสดงทุกเส้นทาง</button>
             }
-            <span class="text-xs font-medium text-slate-400">{{ workOrders().length }} รายการ</span>
+            <span class="text-xs text-slate-400">{{ workOrders().length }} รายการ</span>
           </div>
         </div>
-
         <div class="flex flex-col gap-3">
-          <!-- บล็อกการ์ดรายละเอียดของแต่ละใบงาน -->
           @for (workOrder of workOrders(); track workOrder.job_code) {
-            <div (click)="selectOrderOnMap(workOrder.job_code)" 
-                 class="p-4 rounded-xl border-l-4 border-t border-r border-b border-slate-200 bg-slate-50 hover:bg-white hover:shadow-sm transition cursor-pointer relative"
-                 [style.border-left-color]="workOrder.color">
-              
-              <div class="flex items-center justify-between mb-2">
-                <h3 class="font-bold text-slate-800 text-sm truncate max-w-[200px]" [title]="workOrder.job_code">
-                  Code: {{ workOrder.job_code.substring(0, 8) }}...
-                </h3>
-                <span class="px-2 py-0.5 rounded bg-slate-200/60 text-slate-700 text-xs font-medium">
-                  {{ workOrder.status }}
-                </span>
-              </div>
-              
-              <div class="flex gap-2 mb-3">
-                <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-semibold">
-                  {{ workOrder.total_orders }} ออเดอร์
-                </span>
-                <span class="px-2.5 py-1 rounded-md bg-orange-50 text-orange-600 text-xs font-semibold">
-                  รวม {{ workOrder.total_boxes }} กล่อง
-                </span>
-              </div>
-
-              <!-- รายการจุดจอดและลำดับการส่งของลูกค้าภายในใบงาน -->
-              <div class="space-y-2 text-sm">
-                <div>
-                  <span class="block text-xs text-slate-400 mb-1">ลำดับการจัดส่ง</span>
-                  <div class="space-y-1 bg-white p-2.5 rounded-lg border border-slate-100">
+            @if (workOrder.stops?.length) {
+              <article (click)="selectOrderOnMap(workOrder.job_code)" class="p-3 md:p-4 rounded-xl border border-[#e2ebd8] border-l-4 bg-[#f9fbf6] hover:bg-white hover:shadow-sm transition cursor-pointer min-w-0" [class.ring-2]="selectedJob()?.job_code === workOrder.job_code" [class.ring-[#99CC66]]="selectedJob()?.job_code === workOrder.job_code" [style.border-left-color]="workOrder.color">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                  <h3 class="font-bold text-slate-800 text-sm truncate" [title]="workOrder.job_code">Code: {{ workOrder.job_code }}</h3>
+                  <span class="px-2 py-0.5 rounded bg-[#eaf2df] text-[#55773a] text-xs shrink-0">{{ workOrder.status }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                  <div class="p-2 rounded-lg bg-[#edf5e5] text-[#55773a]">
+                    <span class="block text-[11px]">ออเดอร์</span>
+                    <span class="text-sm font-bold">{{ workOrder.stops?.length }} รายการ</span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-[#f7f3e8] text-amber-700">
+                    <span class="block text-[11px]">จำนวนกล่อง</span>
+                    <span class="text-sm font-bold">{{ workOrder.total_boxes }} กล่อง</span>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <span class="block text-xs font-semibold text-slate-500 mb-2">ลำดับการจัดส่ง</span>
+                  <div class="space-y-2 bg-white p-3 rounded-lg border border-[#e8eee1]">
                     @for (stop of workOrder.stops; track stop.stop_id) {
-                      <div class="text-xs text-slate-600 flex justify-between items-center gap-1">
-                        <div class="truncate max-w-[220px]">
-                          <span class="font-semibold text-slate-800">{{ stop.sequence_no }}.</span> 
-                          {{ stop.customer_name }} 
-                          <span class="text-slate-400">({{ stop.location_name }})</span>
+                      <div>
+                        <div class="flex justify-between items-start gap-2 text-xs text-slate-600">
+                          <div class="min-w-0">
+                            <span class="font-semibold text-[#648c3d]">{{ stop.sequence_no }}.</span>
+                            <span class="font-medium text-slate-800">{{ stop.customer_name }}</span>
+                            <span class="block text-slate-400 mt-0.5">{{ stop.location_name }}</span>
+                          </div>
+                          <span class="text-slate-400 shrink-0">{{ stop.box_count }} กล่อง</span>
                         </div>
-                        <span class="text-slate-400 flex-none">[{{ stop.box_count }} กล่อง]</span>
+                        @if (stop.order_note) {
+                          <p class="text-[11px] text-orange-500 pl-4 mt-1">หมายเหตุ: {{ stop.order_note }}</p>
+                        }
                       </div>
-                      @if (stop.order_note) {
-                        <p class="text-[11px] text-orange-500 pl-4 italic mb-1">
-                          * หมายเหตุ: {{ stop.order_note }}
-                        </p>
-                      }
                     }
                   </div>
                 </div>
-
-                <div class="flex justify-between pt-2 border-t border-slate-200 text-xs">
-                  <span class="text-slate-400">Distance (OSRM)</span>
-                  <span class="font-medium text-slate-700">
-                    {{ workOrder.distance_km === undefined ? 'Error' : (workOrder.distance_km.toFixed(2) + ' km') }}
-                  </span>
+                <div class="space-y-2 pt-3 border-t border-[#e2ebd8] text-xs">
+                  <div class="flex justify-between gap-2">
+                    <span class="text-slate-400">ระยะทาง</span>
+                    <span class="font-medium text-slate-700 text-right">{{ workOrder.distance ?? (workOrder.distance_km !== undefined ? workOrder.distance_km.toFixed(2) + ' km' : '0 km') }}</span>
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <span class="text-slate-400">เวลาจัดส่ง</span>
+                    <span class="font-medium text-slate-700 text-right">{{ workOrder.duration ?? (workOrder.duration_min !== undefined ? workOrder.duration_min.toFixed(0) + ' mins' : '0 mins') }}</span>
+                  </div>
                 </div>
-                <div class="flex justify-between text-xs">
-                  <span class="text-slate-400">Duration (OSRM)</span>
-                  <span class="font-medium text-slate-700">
-                    {{ workOrder.duration_min === undefined ? 'Error' : (workOrder.duration_min.toFixed(0) + ' mins') }}
-                  </span>
-                </div>
-              </div>
-
-            </div>
+              </article>
+            }
           } @empty {
-            <!-- กล่องแสดงสถานะเมื่อยังไม่มีข้อมูลใบงานในระบบ -->
-            <div class="py-10 text-center rounded-xl border border-dashed border-slate-300">
-              <i class="fa-solid fa-inbox text-2xl text-slate-300 mb-2"></i>
-              <p class="text-sm text-slate-400">ยังไม่มีใบงาน</p>
+            <div class="py-10 text-center rounded-xl border border-dashed border-[#cbd9bc] bg-[#f9fbf6]">
+              <i class="fa-solid fa-inbox text-2xl text-[#99CC66] mb-2"></i>
+              <p class="text-sm text-slate-500">ยังไม่มีใบงาน</p>
               <p class="text-xs text-slate-400 mt-1">กดสร้างใบงานเพื่อเริ่มดึงข้อมูลจำลองและเส้นทาง</p>
             </div>
           }
         </div>
-      </div>
+      </section>
     </div>
-
-    <!-- ส่วนท้ายด้านล่างสำหรับวางกลุ่มปุ่มสั่งการทำงานต่างๆ -->
-    <div class="p-5 border-t border-slate-200 bg-slate-50 flex-none">
-      <div class="flex flex-col gap-2.5">
-        <button (click)="generateWorkOrders()" [disabled]="loading()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition shadow-sm">
+    <div class="p-3 md:p-4 border-t border-[#e2ebd8] bg-white shrink-0">
+      <div class="flex flex-col gap-2">
+        <button (click)="generateWorkOrders()" [disabled]="loading()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#99CC66] text-[#29451b] text-sm font-semibold hover:bg-[#89bd55] disabled:opacity-50 transition">
           <i class="fa-solid fa-file-circle-plus"></i>
           <span>ดึงข้อมูลงานและเส้นทาง</span>
         </button>
-        <button (click)="clearWorkOrders()" [disabled]="loading()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 transition">
+        <button (click)="clearWorkOrders()" [disabled]="loading()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white border border-[#d5e2c8] text-slate-600 text-sm font-semibold hover:bg-[#f5f8f1] disabled:opacity-50 transition">
           <i class="fa-solid fa-trash-can"></i>
           <span>ล้างข้อมูล</span>
         </button>
-        <button (click)="saveWorkOrders()" [disabled]="workOrders().length === 0 || loading()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition shadow-sm">
-          <i class="fa-solid fa-floppy-disk"></i>
-          <span>บันทึกข้อมูล</span>
-        </button>
       </div>
     </div>
-
-  </div> 
+  </div>
 </div>

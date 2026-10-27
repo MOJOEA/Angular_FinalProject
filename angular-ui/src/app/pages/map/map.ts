@@ -1,55 +1,91 @@
-import { Component, OnInit, signal, viewChild } from '@angular/core';
-
-import { WorkService } from '../../../service/api/work'; 
-import { RoutesAMapService } from '../../../service/api/routesamap'; 
+import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
+import { WorkService } from '../../../service/api/work';
+import { RoutesAMapService } from '../../../service/api/routesamap';
+import { SettingService } from '../../../service/api/setting';
 import { WorkJob } from '../../../Model/work';
-
+import { SystemSetting } from '../../../Model/setting';
 import { MapViewComponent } from '../../components/map-view/map-view';
+import { calculateJobProfit, ProfitSummary } from '../../../Util/delivery-calculator';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [MapViewComponent],
+  imports: [MapViewComponent, CommonModule],
   templateUrl: './map.html',
   styleUrl: './map.css',
 })
 export class Map implements OnInit {
   readonly mapView = viewChild<MapViewComponent>('mapView');
-
   loading = signal<boolean>(false);
   errorMessage = signal<string>('');
-  
   workOrders = signal<WorkJob[]>([]);
-  
+  selectedJob = signal<WorkJob | null>(null);
+  systemSetting = signal<SystemSetting | null>(null);
+
+  selectedJobProfit = computed<ProfitSummary | null>(() => {
+    const job = this.selectedJob();
+    const setting = this.systemSetting();
+    return job && setting ? calculateJobProfit(job, setting) : null;
+  });
+
   constructor(
-    private workService: WorkService, 
-    private routesAMapService: RoutesAMapService 
+    private workService: WorkService,
+    private routesAMapService: RoutesAMapService,
+    private settingService: SettingService
   ) {}
 
-  // โหลดข้อมูลและแสดงเส้นทางบนแผนที่ทันทีเมื่อเปิดหน้าจอ
+  // ฟังก์ชัน: เริ่มต้นโหลดการตั้งค่าระบบ
   async ngOnInit(): Promise<void> {
-    this.loadWorkOrders();
+    await this.fetchSystemSetting();
   }
 
+  // ฟังก์ชัน: ดึงและแปลงการตั้งค่าจาก Backend ก่อนโหลดใบงาน
+  async fetchSystemSetting(): Promise<void> {
+    try {
+      const res = await this.settingService.get();
+
+      if (res?.data) {
+        const rawData = res.data;
+        const formattedSetting: SystemSetting = {
+          ...rawData,
+          box_price: Number(rawData.box_price) || 0,
+          box_cost: Number(rawData.box_cost) || 0,
+          rider_base_fee: Number(rawData.rider_base_fee) || 0,
+          rider_fee_box: Number(rawData.rider_fee_box) || 0,
+          rider_speed_kmh: Number(rawData.rider_speed_kmh) || 0,
+          deadline_time: Number(rawData.deadline_time) || 60
+        };
+        this.systemSetting.set(formattedSetting);
+      }
+    } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลการตั้งค่า:', error);
+    }
+
+  await this.loadWorkOrders();
+}
+
+
+  // ฟังก์ชัน: ดึงใบงาน ประมวลผลเส้นทาง และแสดงผลบนแผนที่
   private async fetchAndProcessWork(fetchApi: () => Promise<any>): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
     this.errorMessage.set('');
-    
     try {
       const res = await fetchApi();
       const mockWorks: WorkJob[] = res?.data || [];
-
       if (mockWorks.length === 0) {
+        this.workOrders.set([]);
+        this.selectedJob.set(null);
+        this.mapView()?.clearRoutes();
         this.errorMessage.set('ไม่พบข้อมูลใบงานจำลองในระบบ');
         return;
       }
-
       const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
-      
       this.workOrders.set(worksWithRoutes);
+      this.selectedJob.set(null);
       this.mapView()?.drawAllRoutes(worksWithRoutes);
-
     } catch (error) {
       this.errorMessage.set('เกิดข้อผิดพลาดในการดึงและสร้างเส้นทางใบงาน');
       console.error(error);
@@ -58,37 +94,37 @@ export class Map implements OnInit {
     }
   }
 
-  async loadWorkOrders(): Promise<void>{
+    // ฟังก์ชัน: โหลดใบงานทั้งหมดจากระบบ
+  async loadWorkOrders(): Promise<void> {
     await this.fetchAndProcessWork(() => this.workService.getAllWork());
   }
 
-  // ดึงข้อมูลใบงาน พ่วงพิกัดเส้นทางจาก API และส่งไปวาดบนแผนที่ทั้งหมด
+  // ฟังก์ชัน: สร้างใบงานและแสดงเส้นทาง
   async generateWorkOrders(): Promise<void> {
     await this.fetchAndProcessWork(() => this.workService.getWorkCreat());
   }
 
-  // ค้นหาและแสดงเส้นทางบนแผนที่เฉพาะใบงานเดี่ยวที่เลือก
+
+  // ฟังก์ชัน: เลือกใบงานและแสดงเส้นทางเฉพาะรายการ
   selectOrderOnMap(job_code: string): void {
-    const workOrder = this.workOrders().find((wo) => wo.job_code === job_code);
-    if (workOrder) { 
+    const workOrder = this.workOrders().find(wo => wo.job_code === job_code);
+    if (workOrder) {
+      this.selectedJob.set(workOrder);
       this.mapView()?.drawSingleRoute(workOrder);
     }
   }
 
-  // สั่งให้แผนที่แสดงเส้นทางของทุกใบงานพร้อมกันทั้งหมดอีกครั้ง
+  // ฟังก์ชัน: แสดงเส้นทางใบงานทั้งหมดบนแผนที่
   showAllOrdersOnMap(): void {
+    this.selectedJob.set(null);
     this.mapView()?.drawAllRoutes(this.workOrders());
   }
 
-  // ล้างค่าข้อมูลใบงานและลบเส้นทางทั้งหมดออกจากแผนที่
+  // ฟังก์ชัน: ล้างใบงานและเส้นทางบนแผนที่
   clearWorkOrders(): void {
+    this.selectedJob.set(null);
     this.workOrders.set([]);
+    this.errorMessage.set('');
     this.mapView()?.clearRoutes();
-  }
-
-  // บันทึกรายการแผนงานและข้อมูลเส้นทางปัจจุบันลงคอนโซล
-  saveWorkOrders(): void {
-    if (this.workOrders().length === 0) return;
-    console.log('บันทึกข้อมูล Work Orders ปัจจุบัน:', this.workOrders());
   }
 }
