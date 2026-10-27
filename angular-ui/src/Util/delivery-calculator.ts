@@ -29,6 +29,17 @@ export interface JobValidationResult {
   warnings: string[];
 }
 
+// // Interface สำหรับติดตามสถานะกล่องและจุดส่ง
+// export interface JobProgressSummary {
+//   totalInitialBoxes: number;   // จำนวนกล่องทั้งหมดตอนเริ่มต้น
+//   deliveredBoxes: number;      // จำนวนกล่องที่ส่งเรียบร้อยแล้ว
+//   remainingBoxes: number;      // จำนวนกล่องคงเหลือที่ต้องส่งต่อ
+//   totalStops: number;          // จำนวนจุดส่งทั้งหมด (1-3 จุด)
+//   completedStops: number;      // จำนวนจุดส่งที่เสร็จแล้ว
+//   remainingStops: number;      // จำนวนจุดส่งที่เหลือ
+//   isAllCompleted: boolean;     // ส่งครบทุกจุดแล้วหรือยัง
+// }
+
 export function parseDistanceKm(distanceStr?: string | number): number {
   if (distanceStr === undefined || distanceStr === null) return 0;
   if (typeof distanceStr === 'number') return Math.max(0, distanceStr);
@@ -67,6 +78,7 @@ export function calculateProfitFromValues(totalBoxes: number, distanceKm: number
   const riderBaseFee = setting.rider_base_fee || 0;
   const riderDistanceFee = safeBoxes * (setting.rider_fee_box || 0) * safeDistance;
   const totalRiderCost = safeBoxes * (setting.rider_fee_box * safeDistance);
+
   // const totalRiderCost = riderBaseFee + riderDistanceFee;
 
   const netProfit = totalRevenue - foodCost - totalRiderCost;
@@ -125,3 +137,32 @@ export function validateJobConstraints(job: WorkJob, setting: SystemSetting): Jo
   }
   return { isValid: warnings.length === 0, warnings };
 }
+
+/* สร้างตัวแปรเก็บค่าใช้จ่ายใบงาน กำหนด 2 ตัวแปร เก็บค่าจำนวนกล่องที่เหลืออยู่ ค่า defalut = mapJob.stop.boxcount 
+ค่าใช้จ่าย = 0 ,loop วน job stop length ในลูป สร้างตัวแปรชั่วคราวเก็บค่าใช้จ่ายจุดนั้น = 2*กล่องที่เหลืออยู่*ระยะทางจุดนั้น(แปลงเป้น km) 
+2   ค่าใช้จ่าย += ค่าใช้จ่ายจุดนั้น 
+3 จำนวนกล่องเหลือ -= stop.boxcount 
+จบลูป
+ตัวแปรค่าใช้จ่าย */
+// export function calculateRiderStepFee(mapJob: WorkJob): number {
+//   let remainingBoxes = (mapJob.stops || []).reduce(
+//     (sum, stop) => sum + (stop.box_count || stop.box_count || 0), 
+//     0
+//   );
+  
+//   let totalCost = 0;
+
+//   for (const stop of mapJob.stops || []) {
+//     const distanceKm = parseDistanceKm(stop.distance);
+    
+//     // คำนวณค่าใช้จ่ายจุดนี้: 2 * กล่องที่เหลือ * ระยะทาง(กม.)
+//     const tempCost = 2 * remainingBoxes * distanceKm;
+    
+//     totalCost += tempCost;
+    
+//     // หักกล่องของจุดนี้ออก
+//     remainingBoxes -= (stop.box_count || stop.box_count || 0);
+//   }
+
+//   return parseFloat(totalCost.toFixed(2));
+// }
