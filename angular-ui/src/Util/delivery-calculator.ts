@@ -47,42 +47,69 @@ export function parseDurationMins(durationStr?: string | number): number {
 }
 
 // ฟังก์ชัน: คำนวณสรุปกำไรขาดทุนและตรวจสอบเวลาจัดส่งของใบงาน
-export function calculateJobProfit(job: WorkJob, setting: SystemSetting): ProfitSummary {
-  const totalBoxes = job.total_boxes > 0 ? job.total_boxes : (job.stops || []).reduce((sum, stop) => sum + (stop.box_count || 0), 0);
-  const distanceKm = parseDistanceKm(job.distance);
-  const durationMins = parseDurationMins(job.duration);
-  const deadlineMins = Number(setting?.deadline_time) || 60;
-  const isTimeExceeded = durationMins > deadlineMins;
-  const profitBase = calculateProfitFromValues(totalBoxes, distanceKm, setting);
-  return { ...profitBase, durationMins, deadlineMins, isTimeExceeded };
+export function calculateJobProfit(
+  job: WorkJob,
+  setting: SystemSetting
+): ProfitSummary {
+  const totalBoxes = Math.max(
+    0,
+    Number(job.total_boxes) > 0
+      ? Number(job.total_boxes)
+      : (job.stops || []).reduce(
+          (sum, stop) => sum + Math.max(0, Number(stop.box_count) || 0),
+          0
+        )
+  );
+
+  const distanceKm = parseDistanceKm(job.distance ?? job.distance_km);
+  const durationMins = parseDurationMins(job.duration ?? job.duration_min);
+  const deadlineMins = Math.max(0, Number(setting.deadline_time) || 60);
+
+  return {
+    ...calculateProfitFromValues(totalBoxes, distanceKm, setting),
+    durationMins,
+    deadlineMins,
+    isTimeExceeded: durationMins > deadlineMins,
+  };
 }
 
-// ฟังก์ชัน: คำนวณรายรับ ต้นทุน และกำไรจากจำนวนกล่องกับระยะทาง
-export function calculateProfitFromValues(totalBoxes: number, distanceKm: number, setting: SystemSetting): ProfitSummary {
-  const safeBoxes = Math.max(0, totalBoxes);
-  const safeDistance = Math.max(0, distanceKm);
-  const totalRevenue = safeBoxes * (setting.box_price || 0);
-  const foodCost = safeBoxes * (setting.box_cost || 0);
+export function calculateProfitFromValues(
+  totalBoxes: number,
+  distanceKm: number,
+  setting: SystemSetting
+): ProfitSummary {
+  const safeBoxes = Math.max(0, Number(totalBoxes) || 0);
+  const safeDistance = Math.max(0, Number(distanceKm) || 0);
+
+  const price = Math.max(0, Number(setting.box_price) || 0);
+  const cost = Math.max(0, Number(setting.box_cost) || 0);
+  const baseFee = Math.max(0, Number(setting.rider_base_fee) || 0);
+  const distanceRate = Math.max(0, Number(setting.rider_fee_box) || 0);
+
+  const totalRevenue = safeBoxes * price;
+  const foodCost = safeBoxes * cost;
   const grossProfit = totalRevenue - foodCost;
-  const riderBaseFee = setting.rider_base_fee || 0;
-  const riderDistanceFee = safeBoxes * (setting.rider_fee_box || 0) * safeDistance;
+  const riderBaseFee = baseFee;
+  const riderDistanceFee = safeBoxes * distanceRate * safeDistance;
   const totalRiderCost = riderBaseFee + riderDistanceFee;
-  const netProfit = totalRevenue - foodCost - totalRiderCost;
-  const marginPercent = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  const netProfit = grossProfit - totalRiderCost;
+  const marginPercent =
+    totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
   return {
     totalBoxes: safeBoxes,
-    totalRevenue: parseFloat(totalRevenue.toFixed(2)),
-    foodCost: parseFloat(foodCost.toFixed(2)),
-    grossProfit: parseFloat(grossProfit.toFixed(2)),
-    riderBaseFee: parseFloat(Number(riderBaseFee || 0).toFixed(2)),
-    riderDistanceFee: parseFloat(riderDistanceFee.toFixed(2)),
-    totalRiderCost: parseFloat(totalRiderCost.toFixed(2)),
-    netProfit: parseFloat(netProfit.toFixed(2)),
-    marginPercent: parseFloat(marginPercent.toFixed(2)),
+    totalRevenue: Number(totalRevenue.toFixed(2)),
+    foodCost: Number(foodCost.toFixed(2)),
+    grossProfit: Number(grossProfit.toFixed(2)),
+    riderBaseFee: Number(riderBaseFee.toFixed(2)),
+    riderDistanceFee: Number(riderDistanceFee.toFixed(2)),
+    totalRiderCost: Number(totalRiderCost.toFixed(2)),
+    netProfit: Number(netProfit.toFixed(2)),
+    marginPercent: Number(marginPercent.toFixed(2)),
     isProfit: netProfit >= 0,
     durationMins: 0,
-    deadlineMins: Number(setting?.deadline_time) || 60,
-    isTimeExceeded: false
+    deadlineMins: Math.max(0, Number(setting.deadline_time) || 60),
+    isTimeExceeded: false,
   };
 }
 

@@ -1,7 +1,4 @@
-
 {
-  "outputDirectory": "dist/angular-ui/browser",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/(.*)",

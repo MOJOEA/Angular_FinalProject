@@ -33,4 +33,5 @@ export interface RouteStop {
   location_name: string;
   latitude: number;
   longitude: number;
+  distance?: number;
 }
