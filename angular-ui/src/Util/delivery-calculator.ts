@@ -29,16 +29,7 @@ export interface JobValidationResult {
   warnings: string[];
 }
 
-// // Interface สำหรับติดตามสถานะกล่องและจุดส่ง
-// export interface JobProgressSummary {
-//   totalInitialBoxes: number;   // จำนวนกล่องทั้งหมดตอนเริ่มต้น
-//   deliveredBoxes: number;      // จำนวนกล่องที่ส่งเรียบร้อยแล้ว
-//   remainingBoxes: number;      // จำนวนกล่องคงเหลือที่ต้องส่งต่อ
-//   totalStops: number;          // จำนวนจุดส่งทั้งหมด (1-3 จุด)
-//   completedStops: number;      // จำนวนจุดส่งที่เสร็จแล้ว
-//   remainingStops: number;      // จำนวนจุดส่งที่เหลือ
-//   isAllCompleted: boolean;     // ส่งครบทุกจุดแล้วหรือยัง
-// }
+
 
 export function parseDistanceKm(distanceStr?: string | number): number {
   if (distanceStr === undefined || distanceStr === null) return 0;
@@ -60,9 +51,10 @@ export function parseDurationMins(durationStr?: string | number): number {
 // ฟังก์ชัน: คำนวณสรุปกำไรขาดทุนและตรวจสอบเวลาจัดส่งของใบงาน
 export function calculateJobProfit(job: WorkJob, setting: SystemSetting): ProfitSummary {
   const totalBoxes = job.total_boxes > 0 ? job.total_boxes : (job.stops || []).reduce((sum, stop) => sum + (stop.box_count || 0), 0);
-  const distanceKm = parseDistanceKm(job.distance);
-  const durationMins = parseDurationMins(job.duration);
-  // const riderDistanceFee = calculateRiderStepFee(job);
+  const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance ?? 0;
+  const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration ?? 0;
+  const distanceKm = parseDistanceKm(rawDistance);
+  const durationMins = parseDurationMins(rawDuration);
   const deadlineMins = Number(setting?.deadline_time) || 60;
   const isTimeExceeded = durationMins > deadlineMins;
   const profitBase = calculateProfitFromValues(totalBoxes, distanceKm, setting);
@@ -78,7 +70,9 @@ export function calculateProfitFromValues(totalBoxes: number, distanceKm: number
   const foodCost = safeBoxes * (setting.box_cost || 0);
   const grossProfit = totalRevenue - foodCost;
   const riderBaseFee = setting.rider_base_fee || 0;
-  const riderDistanceFee = safeBoxes * (setting.rider_fee_box || 0) * safeDistance;
+  const riderDistanceFee = safeBoxes * (setting?.rider_fee_box || 0) * safeDistance;
+
+  // const riderDistanceFee = safeBoxes * (setting.rider_fee_box || 0) * safeDistance;
   const totalRiderCost = Math.max(0, riderBaseFee + riderDistanceFee);
   // const totalRiderCost = safeBoxes * (setting.rider_fee_box * safeDistance);
 
@@ -105,8 +99,12 @@ export function calculateProfitFromValues(totalBoxes: number, distanceKm: number
 
 // ฟังก์ชัน: ประเมินเวลาจัดส่งจากระยะทางและความเร็วเฉลี่ยของไรเดอร์
 export function estimateJobDeliveryTime(job: WorkJob, setting: SystemSetting): DeliveryTimeSummary {
-  const distanceKm = parseDistanceKm(job.distance);
-  let durationMins = parseDurationMins(job.duration);
+  const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance;
+  const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration;
+  // const distanceKm = parseDistanceKm(job.distance);
+  // let durationMins = parseDurationMins(job.duration);
+  const distanceKm = parseDistanceKm(rawDistance);
+  let durationMins = parseDurationMins(rawDuration);
   if (durationMins === 0 && distanceKm > 0) {
     const speed = setting.rider_speed_kmh || 30;
     const drivingTime = (distanceKm / speed) * 60;
@@ -156,16 +154,30 @@ export function calculateRiderStepFee(mapJob: WorkJob): number {
   let totalCost = 0;
 
   for (const stop of mapJob.stops || []) {
-    const distanceKm = parseDistanceKm(stop.distance);
+    const rawDistance = stop.distance ?? (stop as any).distance_km ?? 0;
+    const distanceKm = parseDistanceKm(rawDistance);
     
-    // คำนวณค่าใช้จ่ายจุดนี้: 2 * กล่องที่เหลือ * ระยะทาง(กม.)
+    // คำนวณ: 2 * กล่องคงเหลือ * ระยะทางจุดส่ง(กม.)
     const tempCost = 2 * remainingBoxes * distanceKm;
-    
     totalCost += tempCost;
     
-    // หักกล่องของจุดนี้ออก
-    remainingBoxes -= (stop.box_count || stop.box_count || 0);
+    
+    // หักจำนวนกล่องจุดนี้ออก
+    const stopBoxes = stop.box_count || (stop as any).boxcount || 0;
+    remainingBoxes = Math.max(0, remainingBoxes - stopBoxes);
   }
 
   return parseFloat(totalCost.toFixed(2));
 }
+
+  // for (const stop of mapJob.stops || []) {
+  //   const distanceKm = parseDistanceKm(stop.distance);
+    
+  //   // คำนวณค่าใช้จ่ายจุดนี้: 2 * กล่องที่เหลือ * ระยะทาง(กม.)
+  //   const tempCost = 2 * remainingBoxes * distanceKm;
+    
+  //   totalCost += tempCost;
+    
+  //   // หักกล่องของจุดนี้ออก
+  //   remainingBoxes -= (stop.box_count || stop.box_count || 0);
+  // }
