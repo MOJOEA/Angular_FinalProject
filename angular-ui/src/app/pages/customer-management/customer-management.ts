@@ -82,17 +82,15 @@ export class CustomerManagement implements OnInit, AfterViewInit, OnDestroy {
     this.loadError = '';
 
     try {
-      const query = this.searchQuery.trim();
-      const params = query ? { name: query } : undefined;
 
-      const response: any = await this.customerService.getAllCustomers(params);
+      const response: any = await this.customerService.getAllCustomers();
       
       const rawData = Array.isArray(response) 
         ? response 
         : (response?.data || response?.customers || []);
 
       if (Array.isArray(rawData)) {
-        this.customers = rawData.map((customer: any) => ({
+        const allCustomers: Customer[] = rawData.map((customer: any) => ({
           id: `CUST-${customer.customer_id ?? customer.id ?? '000'}`,
           name: customer.customer_name ?? customer.name ?? 'ไม่มีชื่อ',
           phone: customer.phone_number ?? customer.phone ?? '-',
@@ -101,6 +99,7 @@ export class CustomerManagement implements OnInit, AfterViewInit, OnDestroy {
           lng: Number(customer.longitude ?? customer.lng ?? 100.58124),
           selected: false,
         }));
+        this.customers = allCustomers;
       } else {
         this.loadError = 'รูปแบบข้อมูลลูกค้าไม่ถูกต้อง';
       }
