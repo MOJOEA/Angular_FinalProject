@@ -4,16 +4,7 @@ import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { ChangeDetectorRef } from '@angular/core';
 import { CustomerService } from '../../../service/api/customer';
-
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  address: string;
-  lat: number;
-  lng: number;
-  selected: boolean;
-}
+import { Customer } from '../../../Model/customer';
 
 @Component({
   selector: 'app-customer-management',

@@ -13,7 +13,7 @@ export class CustomerService {
   api = inject(Api);
   apiEndpoint = this.api.API_ENDPOINT_BACKING;
 
-  public async getAllCustomers(params?: { name?: string; limit?: number; lat?: number; lng?: number }): Promise<any> {
+  public async getAllCustomers(params?: { name?: string; limit?: number; lat?: number; lng?: number }): Promise<Customer[]> {
     let httpParams = new HttpParams();
     if (params) {
       if (params.name) httpParams = httpParams.set('name', params.name);
@@ -26,13 +26,13 @@ export class CustomerService {
 
     const url = `${this.apiEndpoint}/api/customer`;
     const response = await lastValueFrom(this.http.get(url, { params: httpParams }));
-    return response;
+    return response as Customer[];
   }
 
-  public async getCustomerById(id: number | string): Promise<any> {
+  public async getCustomerById(id: number | string): Promise<Customer | undefined> {
     const url = `${this.apiEndpoint}/api/customer/${id}`;
     const response = await lastValueFrom(this.http.get(url));
-    return response;
+    return response as Customer | undefined;
   }
 
   public async createCustomer(customerData: {
@@ -41,10 +41,10 @@ export class CustomerService {
     location_name: string;
     latitude: number;
     longitude: number;
-  }): Promise<any> {
+  }): Promise<Customer> {
     const url = `${this.apiEndpoint}/api/customer`;
     const response = await lastValueFrom(this.http.post(url, customerData));
-    return response;
+    return response as Customer;
   }
 
   public async updateCustomer(id: number | string, customerData: {
@@ -53,10 +53,10 @@ export class CustomerService {
     location_name: string;
     latitude: number;
     longitude: number;
-  }): Promise<any> {
+  }): Promise<Customer> {
     const url = `${this.apiEndpoint}/api/customer/${id}`;
     const response = await lastValueFrom(this.http.put(url, customerData));
-    return response;
+    return response as Customer;
   }
 
   public async deleteCustomer(id: number | string): Promise<any> {

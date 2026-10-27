@@ -8,3 +8,7 @@ export interface Order {
   updated_at: string;
   customer_name?: string;
 }
+export interface OrderCustomer {
+  customer_id: number;
+  name: string;
+}
