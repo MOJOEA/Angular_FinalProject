@@ -1,7 +1,9 @@
 export interface Customer {
-  customer_id: number;
+  id: string;
   name: string;
   phone: string;
-  latitude: number;
-  longitude: number;
+  address: string;
+  lat: number;
+  lng: number;
+  selected: boolean;
 }
