@@ -44,27 +44,28 @@ export class Map implements OnInit {
   // ฟังก์ชัน: ดึงและแปลงการตั้งค่าจาก Backend ก่อนโหลดใบงาน
   async fetchSystemSetting(): Promise<void> {
     try {
-      const res: any = await firstValueFrom(this.settingService.get());
-      console.log('ข้อมูล Setting จาก Backend:', res);
-      if (res && res.data) {
+      const res = await this.settingService.get();
+
+      if (res?.data) {
         const rawData = res.data;
-        const formattedSetting: any = {
+        const formattedSetting: SystemSetting = {
           ...rawData,
-          price_per_box: parseFloat(rawData.box_price || 0),
-          food_cost_per_box: parseFloat(rawData.box_cost || 0),
-          base_rider_fee: parseFloat(rawData.rider_base_fee || 0),
+          box_price: Number(rawData.box_price) || 0,
+          box_cost: Number(rawData.box_cost) || 0,
           rider_base_fee: Number(rawData.rider_base_fee) || 0,
-          distance_rate_per_km: parseFloat(rawData.rider_fee_box || 5),
-          delivery_deadline_mins: rawData.deadline_time || 60
+          rider_fee_box: Number(rawData.rider_fee_box) || 0,
+          rider_speed_kmh: Number(rawData.rider_speed_kmh) || 0,
+          deadline_time: Number(rawData.deadline_time) || 60
         };
         this.systemSetting.set(formattedSetting);
-        console.log('แปลงข้อมูล Setting สำเร็จ:', formattedSetting);
       }
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลการตั้งค่า:', error);
     }
-    await this.loadWorkOrders();
-  }
+
+  await this.loadWorkOrders();
+}
+
 
   // ฟังก์ชัน: ดึงใบงาน ประมวลผลเส้นทาง และแสดงผลบนแผนที่
   private async fetchAndProcessWork(fetchApi: () => Promise<any>): Promise<void> {
@@ -81,7 +82,22 @@ export class Map implements OnInit {
         this.errorMessage.set('ไม่พบข้อมูลใบงานจำลองในระบบ');
         return;
       }
-      const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
+     const worksWithRoutes = await this.routesAMapService.getRoutesForMultipleWorks(mockWorks);
+     const allStops = worksWithRoutes.flatMap(work => 
+     work.stops.map(s => {
+        console.log(`งานที่ ${work.work_id} - จุดส่ง ${s.location_name} - distance raw:`, s.distance);
+        return {
+          งานที่: work.work_id,
+          รหัสงาน: work.job_code,
+          จุดส่ง: s.location_name,
+          ลำดับ: s.sequence_no,
+          ระยะทางของจุดนี้: s.distance ?? "ไม่มีข้อมูล"
+        };
+      })
+    );
+
+    console.table(allStops);
+
       this.workOrders.set(worksWithRoutes);
       this.selectedJob.set(null);
       this.mapView()?.drawAllRoutes(worksWithRoutes);
@@ -108,6 +124,8 @@ export class Map implements OnInit {
   selectOrderOnMap(job_code: string): void {
     const workOrder = this.workOrders().find(wo => wo.job_code === job_code);
     if (workOrder) {
+      console.log('📦 ข้อมูล Job ที่เลือก:', workOrder);
+      console.log('📍 ข้อมูล Stops ย่อย:', workOrder.stops);
       this.selectedJob.set(workOrder);
       this.mapView()?.drawSingleRoute(workOrder);
     }

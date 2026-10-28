@@ -1,7 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom, from } from 'rxjs';
-import { mergeMap, toArray } from 'rxjs/operators';
 import { Api } from '../../app/config/api';
 import { Coordinate } from '../../Model/coordinate';
 import { WorkJob } from '../../Model/work';
@@ -27,30 +26,64 @@ export class RoutesAMapService {
     return lastValueFrom(this.http.get<any>(`${this.apiEndpoint}/${depot.longitude},${depot.latitude};${waypointsString}?overview=full&steps=true&geometries=geojson`));
   }
 
-  // ฟังก์ชัน: คำนวณเส้นทาง ระยะทาง และเวลาของใบงานเดี่ยว
-  public async getRouteForSingleWork(work: WorkJob): Promise<WorkJob> {
-    const stops = work.stops;
-    if (!stops || stops.length === 0) {
-      return { ...work, geometry: null, distance_raw: 0, duration_raw: 0, distance_km: 0, duration_min: 0 };
-    }
-    try {
-      const routeResponse = await this.getRoute(this.depot, stops);
-      const primaryRoute = routeResponse?.routes?.[0];
-      const distanceMetres = primaryRoute ? primaryRoute.distance : 0;
-      const durationSeconds = primaryRoute ? primaryRoute.duration : 0;
-      return {
-        ...work,
-        geometry: primaryRoute?.geometry || null,
-        distance_raw: distanceMetres,
-        duration_raw: durationSeconds,
-        distance_km: distanceMetres * 0.001,
-        duration_min: (distanceMetres * 0.12) / 60
-      };
-    } catch (error) {
-      return { ...work, geometry: null, distance_raw: undefined, duration_raw: undefined, distance_km: undefined, duration_min: undefined };
-    }
+ public async getRouteForSingleWork(work: WorkJob): Promise<WorkJob> {
+  const stops = [...(work.stops ?? [])].sort(
+    (a, b) => a.sequence_no - b.sequence_no
+  );
+
+  if (!stops.length) {
+    return {
+      ...work,
+      stops,
+      geometry: null,
+      distance_raw: 0,
+      duration_raw: 0,
+      distance_km: 0,
+      duration_min: 0,
+    };
   }
 
+  try {
+    const route = (await this.getRoute(this.depot, stops))?.routes?.[0];
+
+    if (!route) throw new Error('ไม่พบเส้นทางจาก OSRM');
+
+    const updatedStops = stops.map((stop, i) => ({
+      ...stop,
+      distance: route.legs?.[i]?.distance,
+    }));
+
+    console.table(
+      updatedStops.map(s => ({
+        จุดส่ง: s.location_name,
+        ลำดับ: s.sequence_no,
+        ระยะทางเมตร: s.distance,
+      }))
+    );
+
+    return {
+      ...work,
+      stops: updatedStops,
+      geometry: route.geometry ?? null,
+      distance_raw: route.distance,
+      duration_raw: route.duration,
+      distance_km: route.distance / 1000,
+      duration_min: route.duration / 60,
+    };
+  } catch (error) {
+    console.error(`คำนวณเส้นทางงาน ${work.work_id} ไม่สำเร็จ:`, error);
+
+    return {
+      ...work,
+      stops,
+      geometry: null,
+      distance_raw: undefined,
+      duration_raw: undefined,
+      distance_km: undefined,
+      duration_min: undefined,
+    };
+  }
+}
   // ฟังก์ชัน: คำนวณเส้นทางหลายใบงานพร้อมจำกัดจำนวนคำขอและใช้ผลลัพธ์ซ้ำ
   private cacheMap = new Map<string, any>(); 
 
@@ -85,6 +118,7 @@ public async getRoutesForMultipleWorks(works: WorkJob[]): Promise<WorkJob[]> {
       await Promise.all(chunk.map(async (req) => {
         const updatedWork = await this.getRouteForSingleWork(req.work);
         const routeData = {
+          stops: updatedWork.stops,
           geometry: updatedWork.geometry,
           distance_raw: updatedWork.distance_raw,
           duration_raw: updatedWork.duration_raw,

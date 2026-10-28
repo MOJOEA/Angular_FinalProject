@@ -1,34 +1,37 @@
 <main class="rider-page">
     @if (!selectedWork() && !restoringSavedWork()) {
     <section class="search-page">
-        <h1>ระบบจัดส่งอาหาร</h1>
-        <p>กรอก ID ใบงานเพื่อดูรายละเอียดการจัดส่ง</p>
+        <div class="search-card">
+            <div class="brand-mark" aria-hidden="true">ส่ง</div>
+            <span class="eyebrow">RIDER PORTAL</span>
+            <h1>พร้อมออกไปส่ง<br>ออเดอร์ของคุณหรือยัง?</h1>
+            <p class="search-description">กรอกรหัสใบงานเพื่อเปิดเส้นทางและดูรายละเอียดการจัดส่งทั้งหมด</p>
 
-        <label for="workId">ID ใบงาน</label>
-        <input id="workId" type="text" inputmode="numeric" pattern="[0-9]*" [(ngModel)]="workId" placeholder="เช่น 1" (keyup.enter)="searchWork()" />
+            <label for="workId">รหัสใบงาน</label>
+            <input id="workId" type="text" inputmode="numeric" pattern="[0-9]*" [(ngModel)]="workId" placeholder="เช่น 1001" (keyup.enter)="searchWork()" />
 
-        @if (loading()) {
-        <p class="info">กำลังโหลดใบงาน…</p>
-        }
+            @if (loading()) {
+            <p class="info">กำลังโหลดใบงาน…</p>
+            }
 
-        @if (notice()) {
-        <p class="info">{{ notice() }}</p>
-        }
+            @if (notice()) {
+            <p class="info">{{ notice() }}</p>
+            }
 
-        @if (errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
-        }
+            @if (errorMessage()) {
+            <p class="error">{{ errorMessage() }}</p>
+            }
 
-        <button class="primary-button" type="button" (click)="searchWork()" [disabled]="loading()">
-            ค้นหาใบงาน
-        </button>
-
-        
+            <button class="primary-button" type="button" (click)="searchWork()" [disabled]="loading()">
+                {{ loading() ? 'กำลังค้นหา…' : 'ค้นหาใบงาน' }}
+            </button>
+            <div class="secure-note">ระบบสำหรับพนักงานจัดส่ง</div>
+        </div>
     </section>
     } @else {
     @if (selectedWork(); as work) {
     <header class="topbar">
-        <button type="button" class="back-button" (click)="goBack()">‹</button>
+        <button type="button" class="back-button" (click)="goBack()">กลับ</button>
         <strong>รายละเอียดใบงาน</strong>
         <button class="logout-button" type="button" (click)="goBack()" [disabled]="loading()">
             Logout
@@ -44,7 +47,7 @@
             <app-map-view #mapView class="block flex-1 h-full"></app-map-view>
             @if (navigationInfo(); as navigation) {
             <div class="route-banner">
-                <button class="route-banner-icon" type="button" (click)="stopNavigation()">↶</button>
+                <button class="route-banner-icon" type="button" (click)="stopNavigation()">หยุด</button>
                 <span class="route-banner-copy">
                     <strong>{{ navigation.instruction }}</strong>
                     <small>{{ navigation.distance }} · GPS จำลอง (±{{ navigation.accuracy }} ม.)</small>
@@ -59,7 +62,7 @@
                 <span class="sheet-handle"></span>
             </div>
 
-            <p class="map-caption">⌃ แตะหรือเลื่อนขึ้นเพื่อดูรายละเอียดงานทั้งหมด</p>
+            <p class="map-caption">แตะหรือเลื่อนขึ้นเพื่อดูรายละเอียดงานทั้งหมด</p>
 
             <section class="work-summary">
                 <div class="delivery-heading">
@@ -69,7 +72,7 @@
 
                 <div class="summary-panel">
                     <div class="summary-total">
-                        <span><b>▦</b> จำนวนกล่องทั้งหมด</span>
+                        <span>จำนวนกล่องทั้งหมด</span>
                         <strong>{{ work.total_boxes }} กล่อง</strong>
                     </div>
                     <div class="summary-grid">
@@ -89,7 +92,7 @@
                     <p class="sequence-summary">
                         ลำดับ:
                         @for (stop of work.stops; track stop.stop_id; let i = $index) {
-                            {{ i === 0 ? '' : ' → ' }}จุด {{ stop.sequence_no }} ({{ stop.customer_name }})
+                            {{ i === 0 ? '' : ' · ' }}จุด {{ stop.sequence_no }} ({{ stop.customer_name }})
                         }
                     </p>
                 </div>
@@ -107,12 +110,12 @@
                         <span class="sequence">{{ stop.sequence_no }}</span>
                         <div class="stop-title">
                             <strong>{{ stop.customer_name }}</strong>
-                            <small [class.current-stop]="i === 0">{{ i === 0 ? '● กำลังเดินทาง' : '◯ คิวถัดไป' }}</small>
+                            <small [class.current-stop]="i === 0">{{ i === 0 ? 'กำลังเดินทาง' : 'คิวถัดไป' }}</small>
                         </div>
-                        <span class="boxes">▣ ส่ง {{ stop.box_count }} กล่อง</span>
+                        <span class="boxes">ส่ง {{ stop.box_count }} กล่อง</span>
                     </div>
 
-                    <div class="stop-address">⌖ {{ stop.location_name }}</div>
+                    <div class="stop-address">{{ stop.location_name }}</div>
                     <div class="stop-meta">
                         @if (stop.order_note) {
                             <span>หมายเหตุ: {{ stop.order_note }}</span>
@@ -122,7 +125,7 @@
                     </div>
 
                     <button class="secondary-button" type="button" (click)="showStopNavigation(work, stop)">
-                        {{ i === 0 ? '◎ เปิดแผนที่นำทาง GPS' : '△ เปิดแผนที่นำทาง GPS (จุด ' + stop.sequence_no + ')' }}
+                        {{ i === 0 ? 'เปิดแผนที่นำทาง GPS' : 'เปิดแผนที่นำทาง GPS (จุด ' + stop.sequence_no + ')' }}
                     </button>
                 </article>
                 } @empty {
@@ -131,7 +134,7 @@
             </section>
 
             <button class="start-button" type="button" (click)="startNavigation(work)">
-                ➤ เริ่มนำทางไปจุดที่ 1 ทันที ({{ work.stops[0]?.customer_name }})
+                เริ่มนำทางไปจุดที่ 1 ทันที ({{ work.stops[0]?.customer_name }})
             </button>
         </section>
     </section>
@@ -142,6 +145,5 @@
         }
         }
 </main>
-
 
 

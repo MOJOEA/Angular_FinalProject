@@ -1,24 +1,22 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { lastValueFrom } from 'rxjs';
+import { Api } from '../../app/config/api';
 import { SystemSetting } from '../../Model/setting';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SettingService {
+  private http = inject(HttpClient);
+  private api = inject(Api);
+  apiEndpoint = this.api.API_ENDPOINT_BACKING;
 
-  // private readonly url = 'assets/settings.json';
-  private readonly url = 'http://localhost:3000/api/setting';
-  constructor(private http: HttpClient) {}
-  
-
-  // ดึงข้อมูลการตั้งค่าระบบทั้งหมดจากไฟล์จำลอง JSON
-  // get(): Observable<SystemSetting[]> {
-  //   return this.http.get<SystemSetting[]>(this.url);
-  // }
-  get(): Observable<SystemSetting[]> {
-    return this.http.get<SystemSetting[]>(this.url);
+  public get(): Promise<{ data: SystemSetting }> {
+    const url = `${this.apiEndpoint}/api/setting`;
+    return lastValueFrom(
+      this.http.get<{ data: SystemSetting }>(url)
+    );
   }
 }

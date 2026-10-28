@@ -1,14 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Order } from '../../../Model/order';
+import { Order , OrderCustomer} from '../../../Model/order';
 import { CustomerService } from '../../../service/api/customer';
 import { OrderService } from '../../../service/api/order';
 
-interface OrderCustomer {
-  customer_id: number;
-  name: string;
-}
+
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
