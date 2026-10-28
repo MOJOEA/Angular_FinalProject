@@ -50,24 +50,21 @@ export function parseDurationMins(durationStr?: string | number): number {
 
 // ฟังก์ชัน: คำนวณสรุปกำไรขาดทุนและตรวจสอบเวลาจัดส่งของใบงาน
 export function calculateJobProfit(job: WorkJob, setting: SystemSetting): ProfitSummary {
-  // 🟢 1. คำนวณจำนวนกล่องรวมโดยนำ box_count ในแต่ละจุดส่ง (stops) มาบวกกันทั้งหมด
   const sumBoxesFromStops = (job.stops || []).reduce(
     (sum, stop) => sum + (stop.box_count || 0), 
     0
   );
-  // 🟢 2. กำหนดค่าให้ totalBoxes: ใช้ผลรวมจาก stops ก่อน (หากไม่มี stops ค่อยใช้ job.total_boxes)
   const totalBoxes = sumBoxesFromStops > 0 
     ? sumBoxesFromStops 
     : Math.max(0, job.total_boxes || 0);
 
-    // 🟢 2. เขียนค่ากลับเข้าไปที่ job.total_boxes โดยตรง (เพื่อให้ HTML ที่ดึง job.total_boxes ไปโชว์ อัปเดตทันที)
   if (sumBoxesFromStops > 0) {
     job.total_boxes = sumBoxesFromStops;
   }
   const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance ?? 0;
   const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration ?? 0;
-  const distanceKm = parseDistanceKm(rawDistance);
-  const durationMins = parseDurationMins(rawDuration);
+  const distanceKm = parseDistanceKm();
+  const durationMins = parseDurationMins();
   const deadlineMins = Number(setting?.deadline_time) || 60;
   const isTimeExceeded = durationMins > deadlineMins;
   const profitBase = calculateProfitFromValues(totalBoxes, distanceKm, setting);
