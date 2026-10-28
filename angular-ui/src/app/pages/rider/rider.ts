@@ -47,19 +47,13 @@ export class Rider implements OnInit {
   }
 
   async searchWork(): Promise<void> {
-    const id = Number(String(this.workId ?? '').trim());
-    if (!Number.isSafeInteger(id) || id < 1) {
-      this.selectedWork.set(null);
-      this.errorMessage.set("กรอกรหัสใบงานเป็นตัวเลขให้ถูกต้อง");
-      return;
-    }
-
+    const Code = String(String(this.workId ?? '').trim());
     this.loading.set(true);
     this.errorMessage.set('');
 
     try {
-      const response = await this.workService.acceptWork(id);
-      if (!response?.success || response.message !== 'Status updated to shipping') {
+      const response = await this.workService.acceptWork(Code);
+      if (!response?.success || (response.message == 'Already in shipping' || response.message == 'Work not found' )) {
         this.errorMessage.set(
           response?.message === 'Already in shipping'
             ? 'ใบงานนี้กำลังจัดส่งอยู่แล้ว'
@@ -69,7 +63,7 @@ export class Rider implements OnInit {
         );
         return;
       }
-
+      const id = Number(response.message);
       localStorage.setItem(RIDER_WORK_STORAGE_KEY, String(id));
       await this.loadWorkById(id, false);
     } catch (error) {
