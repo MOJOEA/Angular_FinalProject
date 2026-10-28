@@ -124,8 +124,6 @@ export class Map implements OnInit {
   selectOrderOnMap(job_code: string): void {
     const workOrder = this.workOrders().find(wo => wo.job_code === job_code);
     if (workOrder) {
-      console.log('📦 ข้อมูล Job ที่เลือก:', workOrder);
-      console.log('📍 ข้อมูล Stops ย่อย:', workOrder.stops);
       this.selectedJob.set(workOrder);
       this.mapView()?.drawSingleRoute(workOrder);
     }
