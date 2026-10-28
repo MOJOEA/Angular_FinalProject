@@ -6,7 +6,21 @@ import { CustomerService } from '../../../service/api/customer';
 import { OrderService } from '../../../service/api/order';
 
 
+function getErrorMessage(error: unknown): string | null {
+  if (!isRecord(error)) return null;
 
+  const errorBody = error['error'];
+
+  if (isRecord(errorBody) && typeof errorBody['message'] === 'string') {
+    return errorBody['message'];
+  }
+
+  if (typeof error['message'] === 'string') {
+    return error['message'];
+  }
+
+  return null;
+}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -154,7 +168,7 @@ export class OrderManagement implements OnInit {
       this.closeDialog();
       await this.loadOrders();
     } catch (error: unknown) {
-      this.formError = 'บันทึกออเดอร์ไม่สำเร็จ';
+      this.formError = getErrorMessage(error) || 'บันทึกออเดอร์ไม่สำเร็จ';
       console.error('บันทึกออเดอร์ผ่าน API ไม่สำเร็จ', error);
     } finally {
       this.saving = false;
@@ -174,7 +188,7 @@ export class OrderManagement implements OnInit {
       await this.orderService.deleteOrder(order.order_id);
       await this.loadOrders();
     } catch (error: unknown) {
-      this.loadError = `ลบออเดอร์ #${order.order_id} ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ API`;
+      this.loadError = getErrorMessage(error) || `ลบออเดอร์ #${order.order_id} ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ API`;
       console.error(`ลบออเดอร์ #${order.order_id} ผ่าน API ไม่สำเร็จ`, error);
     } finally {
       this.deletingOrderId = null;
@@ -194,7 +208,7 @@ export class OrderManagement implements OnInit {
       this.orders = [...orders].sort((a, b) => b.order_id - a.order_id);
       this.currentPage = Math.min(this.currentPage, this.totalPages);
     } catch (error: unknown) {
-      this.loadError = 'ไม่สามารถโหลดรายการออเดอร์จาก API ได้';
+      this.loadError = getErrorMessage(error) || 'ไม่สามารถโหลดรายการออเดอร์จาก API ได้';
       console.error('โหลดรายการออเดอร์จาก API ไม่สำเร็จ', error);
     } finally {
       this.loading = false;
@@ -223,7 +237,7 @@ export class OrderManagement implements OnInit {
           : [];
       });
     } catch (error: unknown) {
-      this.loadError = 'ไม่สามารถโหลดข้อมูลลูกค้าจาก API ได้';
+      this.loadError = getErrorMessage(error) || 'ไม่สามารถโหลดข้อมูลลูกค้าจาก API ได้';
       console.error('โหลดข้อมูลลูกค้าจาก API ไม่สำเร็จ', error);
     } finally {
       this.cdr.detectChanges();
