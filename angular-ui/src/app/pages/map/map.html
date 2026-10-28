@@ -37,7 +37,7 @@
           <div class="p-2.5 rounded-lg flex justify-between items-center gap-2 text-xs" [class]="profit.isTimeExceeded ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-[#f0f5e9] text-[#55773a] border border-[#dce8ce]'">
             <span>เวลาจัดส่งโดยประมาณ</span>
             <span class="font-bold text-right">
-              {{ profit.durationMins }} นาที
+              {{ profit.durationMins + 0.4999 | number:'1.0-0' }} นาที
               @if (profit.isTimeExceeded) {
                 <span class="text-[10px] block">(เกินกำหนด {{ profit.deadlineMins }} นาที)</span>
               }
