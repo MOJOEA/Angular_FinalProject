@@ -36,11 +36,14 @@ function extractOrders(response: unknown): Order[] {
       ? response['data']
         : null;
 
-  if (!data || !data.every(isOrder)) {
-    throw new Error('รูปแบบข้อมูลออเดอร์จาก API ไม่ถูกต้อง');
+  if (!data || data.length === 0 || typeof data[0] !== 'object') {
+    throw new Error('รูปแบบข้อมูลออเดอร์จาก API ไม่ถูกต้องหรือไม่ใช่ Array');
   }
-  return data;
+  return data as Order[];
 }
+
+
+
 
 @Injectable({
   providedIn: 'root',
