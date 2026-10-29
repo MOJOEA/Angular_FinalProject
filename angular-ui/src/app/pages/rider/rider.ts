@@ -1,10 +1,12 @@
 import { Component, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
 
 import { Coordinate } from '../../../Model/coordinate';
+import { SystemSetting } from '../../../Model/setting';
 import { RouteStop, WorkJob } from '../../../Model/work';
+import { ProfitSummary, calculateJobProfit } from '../../../Util/delivery-calculator';
 import { WorkService } from '../../../service/api/work';
+import { SettingService } from '../../../service/api/setting';
 import { RoutesAMapService } from '../../../service/api/routesamap';
 import { MapViewComponent } from '../../components/map-view/map-view';
 
@@ -27,9 +29,14 @@ export class Rider implements OnInit {
   readonly restoringSavedWork = signal(false);
   readonly notice = signal('');
   readonly errorMessage = signal('');
+  readonly riderProfit = signal<ProfitSummary | null>(null);
   readonly navigationInfo = signal<{ instruction: string; distance: string; accuracy: number } | null>(null);
 
-  constructor(private readonly workService: WorkService, private readonly routesAMapService: RoutesAMapService) {}
+  constructor(
+    private readonly workService: WorkService,
+    private readonly routesAMapService: RoutesAMapService,
+    private readonly settingService: SettingService,
+  ) {}
 
   async ngOnInit(): Promise<void> {
     const savedId = localStorage.getItem(RIDER_WORK_STORAGE_KEY);
@@ -47,19 +54,13 @@ export class Rider implements OnInit {
   }
 
   async searchWork(): Promise<void> {
-    const id = Number(String(this.workId ?? '').trim());
-    if (!Number.isSafeInteger(id) || id < 1) {
-      this.selectedWork.set(null);
-      this.errorMessage.set("กรอกรหัสใบงานเป็นตัวเลขให้ถูกต้อง");
-      return;
-    }
-
+    const Code = String(String(this.workId ?? '').trim());
     this.loading.set(true);
     this.errorMessage.set('');
 
     try {
-      const response = await this.workService.acceptWork(id);
-      if (!response?.success || response.message !== 'Status updated to shipping') {
+      const response = await this.workService.acceptWork(Code);
+      if (!response?.success || (response.message == 'Already in shipping' || response.message == 'Work not found' )) {
         this.errorMessage.set(
           response?.message === 'Already in shipping'
             ? 'ใบงานนี้กำลังจัดส่งอยู่แล้ว'
@@ -69,7 +70,7 @@ export class Rider implements OnInit {
         );
         return;
       }
-
+      const id = Number(response.message);
       localStorage.setItem(RIDER_WORK_STORAGE_KEY, String(id));
       await this.loadWorkById(id, false);
     } catch (error) {
@@ -89,12 +90,13 @@ export class Rider implements OnInit {
     this.loading.set(true);
     this.errorMessage.set("");
     this.notice.set("");
+    this.riderProfit.set(null);
 
     try {
       const response = await this.workService.getWork(id);
-      let work: WorkJob | null = response?.data ?? null;
+      let job: WorkJob | null = response?.data ?? null;
 
-      if (response?.success === false || !work || Number(work.work_id) !== id) {
+      if (response?.success === false || !job || Number(job.work_id) !== id) {
         localStorage.clear();
         this.workId = '';
         this.selectedWork.set(null);
@@ -102,7 +104,7 @@ export class Rider implements OnInit {
         return;
       }
 
-      if (work.status !== 'shipping') {
+      if (job.status !== 'shipping') {
         localStorage.clear();
         this.workId = '';
         this.selectedWork.set(null);
@@ -110,15 +112,35 @@ export class Rider implements OnInit {
         return;
       }
       // Add OSRM geometry so navigation can draw the road route.
-      work = await this.routesAMapService.getRouteForSingleWork(work);
+      job = await this.routesAMapService.getRouteForSingleWork(job);
       this.workId = String(id);
-      this.selectedWork.set(work);
+      this.selectedWork.set(job);
+      try {
+        const settingResponse = await this.settingService.get();
+        const rawSetting = settingResponse?.data;
+        if (!rawSetting) throw new Error('ไม่พบค่าตั้งค่าระบบ');
+
+        const setting: SystemSetting = {
+          ...rawSetting,
+          box_price: Number(rawSetting.box_price) || 0,
+          box_cost: Number(rawSetting.box_cost) || 0,
+          rider_base_fee: Number(rawSetting.rider_base_fee) || 0,
+          rider_fee_box: Number(rawSetting.rider_fee_box) || 0,
+          rider_speed_kmh: Number(rawSetting.rider_speed_kmh) || 0,
+          deadline_time: Number(rawSetting.deadline_time) || 60,
+        };
+        this.riderProfit.set(calculateJobProfit(job, setting));
+      } catch (error) {
+        this.riderProfit.set(null);
+        console.error('โหลดค่าตั้งค่าเพื่อคำนวณรายได้ไรเดอร์ไม่สำเร็จ:', error);
+      }
       this.errorMessage.set("");
     } catch (error) {
       const status = (error as { status?: number })?.status;
       localStorage.clear();
       this.workId = '';
       this.selectedWork.set(null);
+      this.riderProfit.set(null);
 
       if (status === 404) {
         this.errorMessage.set("ไม่พบใบงานนี้");
@@ -271,6 +293,7 @@ export class Rider implements OnInit {
       this.navigationInfo.set(null);
       this.mapView()?.clearRoutes();
       this.selectedWork.set(null);
+      this.riderProfit.set(null);
       this.errorMessage.set("");
     } catch (error) {
       console.error("คืนใบงานไม่สำเร็จ:", error);

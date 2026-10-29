@@ -74,8 +74,8 @@ export function calculateJobProfit(job: WorkJob, setting: SystemSetting): Profit
 
 // ฟังก์ชัน: คำนวณรายรับ ต้นทุน และกำไรจากจำนวนกล่องกับระยะทาง
 export function calculateProfitFromValues(totalBoxes: number, distanceKm: number, setting: SystemSetting): ProfitSummary {
-  const totalRevenue = totalBoxes * (setting.box_price || 0);
-  const foodCost = totalBoxes * (setting.box_cost || 0);
+  const totalRevenue = totalBoxes * (setting.box_price  || 0);
+  const foodCost = totalBoxes * (setting.box_cost  || 0);
   const grossProfit = totalRevenue - foodCost;
   const riderBaseFee = setting.rider_base_fee || 0;
 
@@ -101,9 +101,12 @@ export function calculateProfitFromValues(totalBoxes: number, distanceKm: number
   };
 }
 
+// ฟังก์ชัน: ประเมินเวลาจัดส่งจากระยะทางและความเร็วเฉลี่ยของไรเดอร์
 export function estimateJobDeliveryTime(job: WorkJob, setting: SystemSetting): DeliveryTimeSummary {
   const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance;
   const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration;
+  // const distanceKm = parseDistanceKm(job.distance);
+  // let durationMins = parseDurationMins(job.duration);
   const distanceKm = parseDistanceKm(rawDistance);
   let durationMins = parseDurationMins(rawDuration);
   if (durationMins === 0 && distanceKm > 0) {
@@ -121,6 +124,7 @@ export function estimateJobDeliveryTime(job: WorkJob, setting: SystemSetting): D
   };
 }
 
+// ฟังก์ชัน: ตรวจสอบจำนวนออเดอร์ เวลาจัดส่ง และผลกำไรของใบงาน
 export function validateJobConstraints(job: WorkJob, setting: SystemSetting): JobValidationResult {
   const warnings: string[] = [];
   const maxOrders = setting.max_orders_rider || 3;
@@ -138,3 +142,4 @@ export function validateJobConstraints(job: WorkJob, setting: SystemSetting): Jo
   }
   return { isValid: warnings.length === 0, warnings };
 }
+
