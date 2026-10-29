@@ -106,8 +106,7 @@ export class OrderManagement implements OnInit {
   statusLabel(status: Order['status']): string {
     const labels: Record<Order['status'], string> = {
       pending: 'รอดำเนินการ',
-      delivered: 'จัดส่งแล้ว',
-      cancelled: 'ยกเลิก',
+      completed: 'จัดส่งแล้ว',
     };
     return labels[status];
   }

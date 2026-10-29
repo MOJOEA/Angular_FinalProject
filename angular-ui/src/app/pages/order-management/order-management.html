@@ -74,9 +74,8 @@
               <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
                 [ngClass]="{
                   'bg-amber-50 text-amber-700': order?.status === 'pending',
-                  'bg-[#99CC66] text-white': order?.status === 'delivered',
-                  'bg-red-50 text-red-600': order?.status === 'cancelled',
-                  'bg-slate-100 text-slate-600': !['pending', 'delivered', 'cancelled'].includes(order?.status ?? '')
+                  'bg-[#99CC66] text-white': order?.status === 'completed',
+                  'bg-slate-100 text-slate-600': !['pending', 'completed'].includes(order?.status ?? '')
                 }">{{ statusLabel(order?.status ?? 'pending') }}</span>
             </td>
             <td class="px-4 py-4">

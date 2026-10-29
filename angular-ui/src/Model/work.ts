@@ -25,7 +25,7 @@ export interface RouteStop {
   sequence_no: number;
   box_count: number;
   order_note: string;
-  status: 'pending' | 'delivered' | 'cancelled';
+  status: 'pending' | 'completed';
   created_at: string;
   customer_id: number;
   customer_name: string;
