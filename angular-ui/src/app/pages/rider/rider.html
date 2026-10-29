@@ -138,9 +138,15 @@
                     <button class="secondary-button" type="button" (click)="showStopNavigation(work, stop)">
                         {{ i === 0 ? 'เปิดแผนที่นำทาง GPS' : 'เปิดแผนที่นำทาง GPS (จุด ' + stop.sequence_no + ')' }}
                     </button>
-                    <button class="secondary-button" type="button" (click)="UpdateOrderSuccess(stop.order_id)">
-                        ยืนยันการนำส่งสำเร็จ
-                    </button>
+                    @if (stop.status === 'completed') {
+                        <button class="secondary-button" style="background-color: #cccccc; color: #666666; border-color: #b5b5b5; cursor: not-allowed;" type="button" disabled>
+                            จัดส่งแล้ว
+                        </button>
+                    } @else {
+                        <button class="secondary-button" type="button" (click)="UpdateOrderSuccess(stop.order_id)">
+                            ยืนยันการนำส่งสำเร็จ
+                        </button>
+                    }
                 </article>
                 } @empty {
                 <p class="info">ใบงานนี้ยังไม่มีจุดจัดส่ง</p>

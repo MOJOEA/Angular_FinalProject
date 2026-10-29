@@ -3,7 +3,7 @@ export interface Order {
   customer_id: number;
   box_count: number;
   order_note: string;
-  status: 'pending' | 'delivered' | 'cancelled';
+  status: 'pending' | 'completed';
   latitude?: number;
   longitude?: number;
   created_at: string;
