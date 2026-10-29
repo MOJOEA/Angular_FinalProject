@@ -63,8 +63,8 @@ export function calculateJobProfit(job: WorkJob, setting: SystemSetting): Profit
   }
   const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance ?? 0;
   const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration ?? 0;
-  const distanceKm = parseDistanceKm();
-  const durationMins = parseDurationMins();
+  const distanceKm = parseDistanceKm(rawDistance);
+  const durationMins = parseDurationMins(rawDuration);
   const deadlineMins = Number(setting?.deadline_time) || 60;
   const isTimeExceeded = durationMins > deadlineMins;
   const profitBase = calculateProfitFromValues(totalBoxes, distanceKm, setting);
