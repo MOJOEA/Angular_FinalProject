@@ -36,11 +36,14 @@ function extractOrders(response: unknown): Order[] {
       ? response['data']
         : null;
 
-  if (!data || !data.every(isOrder)) {
-    throw new Error('รูปแบบข้อมูลออเดอร์จาก API ไม่ถูกต้อง');
+  if (!data || data.length === 0 || typeof data[0] !== 'object') {
+    throw new Error('รูปแบบข้อมูลออเดอร์จาก API ไม่ถูกต้องหรือไม่ใช่ Array');
   }
-  return data;
+  return data as Order[];
 }
+
+
+
 
 @Injectable({
   providedIn: 'root',
@@ -66,6 +69,10 @@ export class OrderService {
 
   public async updateOrder(orderId: number, order: OrderPayload): Promise<unknown> {
     return this.assertSuccess(await lastValueFrom(this.http.put<unknown>(`${this.url}/${orderId}`, order)));
+  }
+
+  public async updateOrderSuccess(orderId: number): Promise<unknown> {
+    return this.assertSuccess(await lastValueFrom(this.http.put<unknown>(`${this.url}/success/${orderId}`, null)));
   }
 
   public async deleteOrder(orderId: number): Promise<unknown> {

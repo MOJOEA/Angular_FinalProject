@@ -4,10 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Coordinate } from '../../../Model/coordinate';
 import { SystemSetting } from '../../../Model/setting';
 import { RouteStop, WorkJob } from '../../../Model/work';
+
 import { ProfitSummary, calculateJobProfit } from '../../../Util/delivery-calculator';
+
 import { WorkService } from '../../../service/api/work';
 import { SettingService } from '../../../service/api/setting';
+import { OrderService } from '../../../service/api/order';
 import { RoutesAMapService } from '../../../service/api/routesamap';
+
 import { MapViewComponent } from '../../components/map-view/map-view';
 
 const DEMO_CURRENT_POSITION: Coordinate = { latitude: 16.245842, longitude: 103.251458 };
@@ -36,6 +40,7 @@ export class Rider implements OnInit {
     private readonly workService: WorkService,
     private readonly routesAMapService: RoutesAMapService,
     private readonly settingService: SettingService,
+    private readonly orderService: OrderService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -322,5 +327,16 @@ export class Rider implements OnInit {
       this.sheetExpanded = !this.sheetExpanded;
     }
   }
+
+  public async UpdateOrderSuccess(id: number) {
+    const isConfirmed = confirm('คุณต้องการยืนยันการนำส่งสำเร็จใช่หรือไม่?');
+    if (!isConfirmed) { return;}
+    try {
+        await this.orderService.updateOrderSuccess(id);
+    } catch (error) {
+        console.error('เกิดข้อผิดพลาดในการอัปเดตสถานะ:', error);
+    }
+}
+
 }
 
