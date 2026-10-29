@@ -71,6 +71,10 @@ export class OrderService {
     return this.assertSuccess(await lastValueFrom(this.http.put<unknown>(`${this.url}/${orderId}`, order)));
   }
 
+  public async updateOrderSuccess(orderId: number): Promise<unknown> {
+    return this.assertSuccess(await lastValueFrom(this.http.put<unknown>(`${this.url}/success/${orderId}`, null)));
+  }
+
   public async deleteOrder(orderId: number): Promise<unknown> {
     return this.assertSuccess(await lastValueFrom(this.http.delete<unknown>(`${this.url}/${orderId}`)));
   }
