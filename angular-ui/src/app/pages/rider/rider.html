@@ -89,6 +89,17 @@
                             <strong class="status-text">{{ work.status === 'pending' ? 'รอจัดส่ง' : work.status === 'shipping' ? 'กำลังจัดส่ง' : work.status === 'completed' ? 'เสร็จแล้ว' : 'ยกเลิก' }}</strong>
                         </div>
                     </div>
+                    <div class="rider-earnings">
+                        <span class="rider-earnings-copy">
+                            <strong>รายได้ไรเดอร์โดยประมาณ</strong>
+                            <small>คำนวณจากระยะทางและจำนวนกล่อง</small>
+                        </span>
+                        @if (riderProfit(); as profit) {
+                        <strong>{{ profit.totalRiderCost.toFixed(2) }} บาท</strong>
+                        } @else {
+                        <strong>—</strong>
+                        }
+                    </div>
                     <p class="sequence-summary">
                         ลำดับ:
                         @for (stop of work.stops; track stop.stop_id; let i = $index) {
@@ -126,6 +137,9 @@
 
                     <button class="secondary-button" type="button" (click)="showStopNavigation(work, stop)">
                         {{ i === 0 ? 'เปิดแผนที่นำทาง GPS' : 'เปิดแผนที่นำทาง GPS (จุด ' + stop.sequence_no + ')' }}
+                    </button>
+                    <button class="secondary-button" type="button" (click)="UpdateOrderSuccess(stop.order_id)">
+                        ยืนยันการนำส่งสำเร็จ
                     </button>
                 </article>
                 } @empty {

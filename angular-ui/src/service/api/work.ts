@@ -31,7 +31,7 @@ export class WorkService {
   }
 
   // PUT api/work/accept/:id
-  public async acceptWork(id: number): Promise<{ success: boolean; message: string }> {
+  public async acceptWork(id: String): Promise<{ success: boolean; message: string }> {
     const url = `${this.apiEndpoint}/api/work/accept/${id}`;
     return await lastValueFrom(this.http.put<{ success: boolean; message: string }>(url, {}));
   }

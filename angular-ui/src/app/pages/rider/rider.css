@@ -358,6 +358,39 @@
   color: #648b3e;
 }
 
+.rider-earnings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dce8ca;
+  border-radius: 10px;
+  color: #3b4c30;
+  background: #edf4e2;
+}
+
+.rider-earnings-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.rider-earnings-copy strong {
+  font-size: 12px;
+}
+
+.rider-earnings-copy small {
+  color: #707965;
+  font-size: 9px;
+}
+
+.rider-earnings > strong {
+  flex: 0 0 auto;
+  color: #49692f;
+  font-size: 16px;
+}
+
 .sequence-summary {
   margin: 7px 0 0;
   padding: 8px 10px;

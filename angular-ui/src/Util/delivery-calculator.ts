@@ -29,6 +29,8 @@ export interface JobValidationResult {
   warnings: string[];
 }
 
+
+
 export function parseDistanceKm(distanceStr?: string | number): number {
   if (distanceStr === undefined || distanceStr === null) return 0;
   if (typeof distanceStr === 'number') return Math.max(0, distanceStr);
@@ -48,29 +50,42 @@ export function parseDurationMins(durationStr?: string | number): number {
 
 // ฟังก์ชัน: คำนวณสรุปกำไรขาดทุนและตรวจสอบเวลาจัดส่งของใบงาน
 export function calculateJobProfit(job: WorkJob, setting: SystemSetting): ProfitSummary {
-  const totalBoxes = job.total_boxes > 0 ? job.total_boxes : (job.stops || []).reduce((sum, stop) => sum + (stop.box_count || 0), 0);
-  const distanceKm = parseDistanceKm(job.distance);
-  const durationMins = parseDurationMins(job.duration);
+  const sumBoxesFromStops = (job.stops || []).reduce(
+    (sum, stop) => sum + (stop.box_count || 0), 
+    0
+  );
+  const totalBoxes = sumBoxesFromStops > 0 
+    ? sumBoxesFromStops 
+    : Math.max(0, job.total_boxes || 0);
+
+  if (sumBoxesFromStops > 0) {
+    job.total_boxes = sumBoxesFromStops;
+  }
+  const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance ?? 0;
+  const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration ?? 0;
+  const distanceKm = parseDistanceKm(rawDistance);
+  const durationMins = parseDurationMins(rawDuration);
   const deadlineMins = Number(setting?.deadline_time) || 60;
   const isTimeExceeded = durationMins > deadlineMins;
   const profitBase = calculateProfitFromValues(totalBoxes, distanceKm, setting);
   return { ...profitBase, durationMins, deadlineMins, isTimeExceeded };
+
 }
 
 // ฟังก์ชัน: คำนวณรายรับ ต้นทุน และกำไรจากจำนวนกล่องกับระยะทาง
 export function calculateProfitFromValues(totalBoxes: number, distanceKm: number, setting: SystemSetting): ProfitSummary {
-  const safeBoxes = Math.max(0, totalBoxes);
-  const safeDistance = Math.max(0, distanceKm);
-  const totalRevenue = safeBoxes * (setting.box_price || 0);
-  const foodCost = safeBoxes * (setting.box_cost || 0);
+  const totalRevenue = totalBoxes * (setting.box_price  || 0);
+  const foodCost = totalBoxes * (setting.box_cost  || 0);
   const grossProfit = totalRevenue - foodCost;
   const riderBaseFee = setting.rider_base_fee || 0;
-  const riderDistanceFee = safeBoxes * (setting.rider_fee_box || 0) * safeDistance;
-  const totalRiderCost = riderBaseFee + riderDistanceFee;
+
+  const riderDistanceFee = (2 * totalBoxes) * (distanceKm);
+  const totalRiderCost = Math.max(0, riderBaseFee + riderDistanceFee);
+
   const netProfit = totalRevenue - foodCost - totalRiderCost;
   const marginPercent = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
   return {
-    totalBoxes: safeBoxes,
+    totalBoxes: totalBoxes,
     totalRevenue: parseFloat(totalRevenue.toFixed(2)),
     foodCost: parseFloat(foodCost.toFixed(2)),
     grossProfit: parseFloat(grossProfit.toFixed(2)),
@@ -88,8 +103,12 @@ export function calculateProfitFromValues(totalBoxes: number, distanceKm: number
 
 // ฟังก์ชัน: ประเมินเวลาจัดส่งจากระยะทางและความเร็วเฉลี่ยของไรเดอร์
 export function estimateJobDeliveryTime(job: WorkJob, setting: SystemSetting): DeliveryTimeSummary {
-  const distanceKm = parseDistanceKm(job.distance);
-  let durationMins = parseDurationMins(job.duration);
+  const rawDistance = job.distance_km ?? (job.distance_raw ? job.distance_raw / 1000 : undefined) ?? job.distance;
+  const rawDuration = job.duration_min ?? (job.duration_raw ? job.duration_raw / 60 : undefined) ?? job.duration;
+  // const distanceKm = parseDistanceKm(job.distance);
+  // let durationMins = parseDurationMins(job.duration);
+  const distanceKm = parseDistanceKm(rawDistance);
+  let durationMins = parseDurationMins(rawDuration);
   if (durationMins === 0 && distanceKm > 0) {
     const speed = setting.rider_speed_kmh || 30;
     const drivingTime = (distanceKm / speed) * 60;
@@ -123,3 +142,4 @@ export function validateJobConstraints(job: WorkJob, setting: SystemSetting): Jo
   }
   return { isValid: warnings.length === 0, warnings };
 }
+
